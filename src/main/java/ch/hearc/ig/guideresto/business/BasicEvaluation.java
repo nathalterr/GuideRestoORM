@@ -1,13 +1,18 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.*;
+
 import java.util.Date;
 
 /**
  * @author cedric.baudet
  */
+@Entity
+@Table(name="LIKES")
 public class BasicEvaluation extends Evaluation {
-
+    @Column(name="APPRECIATION")
     private Boolean likeRestaurant;
+    @Column(name="ADRESSE_IP")
     private String ipAddress;
 
     public BasicEvaluation() {
