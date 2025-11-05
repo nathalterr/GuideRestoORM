@@ -1,9 +1,6 @@
 package ch.hearc.ig.guideresto.business;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,6 +19,7 @@ public class RestaurantType implements IBusinessObject {
     private String label;
     @Column (name="DESCRIPTION", nullable=false)
     private String description;
+    @Transient
     private Set<Restaurant> restaurants;
 
     public RestaurantType() {

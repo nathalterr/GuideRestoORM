@@ -4,10 +4,7 @@ package ch.hearc.ig.guideresto.business;
  * @author cedric.baudet
  */
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import jakarta.persistence.*;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -17,6 +14,9 @@ import java.util.Set;
 @Table(name="COMMANTAIRES")
 public class CompleteEvaluation extends Evaluation {
 
+    @Id
+    @Column(name="numero")
+    private int id;
     @Column(name="COMMENTAIRE")
     private String comment;
     @Column(name="NOM_UTILISATEUR")

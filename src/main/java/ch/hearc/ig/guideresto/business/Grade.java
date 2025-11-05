@@ -1,9 +1,6 @@
 package ch.hearc.ig.guideresto.business;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 /**
  * @author cedric.baudet
@@ -17,7 +14,9 @@ public class Grade implements IBusinessObject {
     private Integer id;
     @Column(name="NOTE")
     private Integer grade;
+    @Transient
     private CompleteEvaluation evaluation;
+    @Transient
     private EvaluationCriteria criteria;
 
     public Grade() {

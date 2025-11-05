@@ -19,7 +19,12 @@ public class Application {
 
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
-
+// Question à se poser, pourquoi faire un constructeur avec id ? dans tous les cas c'est la base qui doit faire.
+    /* Procédure pour récupérer l'ID après l'insertion par hibernate. Il faudra demander au père Matile s'il trouve bien ou pas
+entityManager.persist(m); // Hibernate fait l'INSERT
+entityManager.flush();   // force l'exécution immédiate
+entityManager.refresh(m);  // reprends le meme élément depuis la base.
+*/
     public static void main(String[] args) {
         scanner = new Scanner(System.in);
         getEntityManager();

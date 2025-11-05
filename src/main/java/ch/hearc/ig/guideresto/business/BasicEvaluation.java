@@ -10,6 +10,9 @@ import java.util.Date;
 @Entity
 @Table(name="LIKES")
 public class BasicEvaluation extends Evaluation {
+    @Id
+    @Column(name="numero")
+    private int id;
     @Column(name="APPRECIATION")
     private Boolean likeRestaurant;
     @Column(name="ADRESSE_IP")
