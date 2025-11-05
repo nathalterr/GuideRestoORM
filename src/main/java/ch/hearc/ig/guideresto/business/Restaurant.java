@@ -41,6 +41,9 @@ public class Restaurant implements IBusinessObject {
         this.address = address;
         this.type = type;
     }
+    public Restaurant( String name, String description, String website, Localisation address, RestaurantType type) {
+        this(null, name, description, website, address, type);
+    }
 
     public Integer getId() {
         return id;

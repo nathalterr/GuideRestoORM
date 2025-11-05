@@ -9,6 +9,8 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.util.*;
 
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
+
 /**
  * @author cedric.baudet
  * @author alain.matile
@@ -20,7 +22,7 @@ public class Application {
 
     public static void main(String[] args) {
         scanner = new Scanner(System.in);
-
+        getEntityManager();
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
         int choice;
         do {
