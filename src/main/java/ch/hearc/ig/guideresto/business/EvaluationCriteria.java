@@ -1,12 +1,23 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 /**
  * @author cedric.baudet
  */
-public class EvaluationCriteria implements IBusinessObject {
 
+@Entity
+@Table(name="CRITERES_EVALUATION")
+public class EvaluationCriteria implements IBusinessObject {
+    @Id
+    @Column(name="NUMERO", nullable=false)
     private Integer id;
+    @Column(name="NOM", nullable=false)
     private String name;
+    @Column(name="DESCRIPTION", nullable=false)
     private String description;
 
     public EvaluationCriteria() {
