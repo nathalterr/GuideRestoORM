@@ -1,14 +1,19 @@
 package ch.hearc.ig.guideresto.business;
 
+import jakarta.persistence.*;
+
 import java.util.Date;
 
 /**
  * @author cedric.baudet
  */
+@MappedSuperclass
 public abstract class Evaluation implements IBusinessObject {
 
-    private Integer id;
+    @Column(name="date_eval")
     private Date visitDate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_rest")
     private Restaurant restaurant;
 
     public Evaluation() {
@@ -16,17 +21,8 @@ public abstract class Evaluation implements IBusinessObject {
     }
 
     public Evaluation(Integer id, Date visitDate, Restaurant restaurant) {
-        this.id = id;
         this.visitDate = visitDate;
         this.restaurant = restaurant;
-    }
-
-    public Integer getId() {
-        return id;
-    }
-
-    public void setId(Integer id) {
-        this.id = id;
     }
 
     public Date getVisitDate() {

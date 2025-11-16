@@ -1,9 +1,6 @@
 package ch.hearc.ig.guideresto.business;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 /**
  * @author cedric.baudet
@@ -13,6 +10,7 @@ import jakarta.persistence.Table;
 @Table(name="CRITERES_EVALUATION")
 public class EvaluationCriteria implements IBusinessObject {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="NUMERO", nullable=false)
     private Integer id;
     @Column(name="NOM", nullable=false)

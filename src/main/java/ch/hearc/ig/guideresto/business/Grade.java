@@ -10,13 +10,16 @@ import jakarta.persistence.*;
 @Table(name="NOTES")
 public class Grade implements IBusinessObject {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="NUMERO")
     private Integer id;
     @Column(name="NOTE")
     private Integer grade;
-    @Transient
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_comm", nullable = false)
     private CompleteEvaluation evaluation;
-    @Transient
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_crit", nullable = false)
     private EvaluationCriteria criteria;
 
     public Grade() {

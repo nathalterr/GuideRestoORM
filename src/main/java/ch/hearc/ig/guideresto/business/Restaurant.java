@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.business;
 import jakarta.persistence.*;
 import org.apache.commons.collections4.CollectionUtils;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -14,6 +15,7 @@ import java.util.Set;
  @Table(name = "RESTAURANTS")
 public class Restaurant implements IBusinessObject {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="NUMERO", nullable=false)
     private Integer id;
     @Column(name="NOM", nullable=false)
@@ -22,11 +24,17 @@ public class Restaurant implements IBusinessObject {
     private String description;
     @Column(name="SITE_WEB", nullable=false)
     private String website;
+    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY)
+    private Set<CompleteEvaluation> completeEvaluations;
+
+    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY)
+    private Set<BasicEvaluation> basicEvaluations;
     @Transient
-    private Set<Evaluation> evaluations;
-    @Transient
-    private Localisation address;
-    @Transient
+    private Set<Evaluation> evaluations; // Il va falloir la remplir par la somme des deux autres listes, mais c'est pas grave
+    @Embedded
+    private Localisation address; // ATTENTION, resto stocke une rue en String (adresse dans bd) et une fk pour la ville : fk_vill
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_type")
     private RestaurantType type;
 
     public Restaurant() {
@@ -114,5 +122,19 @@ public class Restaurant implements IBusinessObject {
 
     public boolean hasEvaluations() {
         return CollectionUtils.isNotEmpty(evaluations);
+    }
+
+    public Collection<CompleteEvaluation> getCompleteEvaluations() {
+        return this.completeEvaluations;
+    }
+    public Collection<BasicEvaluation> getBasicEvaluations() {
+        return this.basicEvaluations;
+    }
+
+    public void setBasicEvaluations(Set<BasicEvaluation> basicEvaluations) {
+        this.basicEvaluations = basicEvaluations;
+    }
+    public void setCompleteEvaluations(Set<CompleteEvaluation> completeEvaluations) {
+        this.completeEvaluations = completeEvaluations;
     }
 }

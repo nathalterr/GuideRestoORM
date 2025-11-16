@@ -12,13 +12,14 @@ import java.util.Set;
 @Table(name="VILLES")
 public class City implements IBusinessObject {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="NUMERO")
     private Integer id;
     @Column(name="CODE_POSTAL")
     private String zipCode;
     @Column(name="NOM_VILLE")
     private String cityName;
-    @Transient
+    @OneToMany(mappedBy = "address.city", fetch = FetchType.LAZY)
     private Set<Restaurant> restaurants;
 
     public City() {

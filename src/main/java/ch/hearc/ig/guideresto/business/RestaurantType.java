@@ -13,13 +13,14 @@ import java.util.Set;
 @Table(name="TYPES_GASTRONOMIQUES")
 public class RestaurantType implements IBusinessObject {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="NUMERO", nullable=false)
     private Integer id;
     @Column (name="LIBELLE", nullable=false)
     private String label;
     @Column (name="DESCRIPTION", nullable=false)
     private String description;
-    @Transient
+    @OneToMany(mappedBy = "type", fetch = FetchType.LAZY)
     private Set<Restaurant> restaurants;
 
     public RestaurantType() {
