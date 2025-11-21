@@ -9,10 +9,10 @@ import jakarta.persistence.Entity;
 @Embeddable
 public class Localisation {
 
-    @Column(name = "adresse")
+    @Column(name = "adresse", nullable= false)
     private String street;
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fk_vill")
+    @JoinColumn(name = "fk_vill", nullable= false)
     private City city;
 
     public Localisation() {

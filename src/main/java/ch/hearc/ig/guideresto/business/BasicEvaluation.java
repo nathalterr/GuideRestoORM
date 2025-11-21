@@ -57,9 +57,8 @@ public class BasicEvaluation extends Evaluation {
 
     @Override
     public Integer getId() {
-        return this.id;
+        return super.getId();
     }
-    public void setId(Integer id) {
-        this.id= id;
-    }
+    @Override
+    public void setId(Integer generatedId) {super.setId(generatedId);}
 }

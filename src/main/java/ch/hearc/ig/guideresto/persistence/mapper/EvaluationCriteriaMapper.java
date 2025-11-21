@@ -21,7 +21,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     }
 
     @Override
-    public EvaluationCriteria findById(int id) {
+    public EvaluationCriteria findById(Integer id) {
         // ✅ Vérifie d’abord le cache
         if (identityMap.containsKey(id)) {
             return identityMap.get(id);
@@ -56,7 +56,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                int id = rs.getInt("numero");
+                Integer id = rs.getInt("numero");
                 EvaluationCriteria crit = identityMap.get(id);
 
                 if (crit == null) {
@@ -85,7 +85,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             stmt.registerOutParameter(3, Types.INTEGER);
 
             stmt.executeUpdate();
-            int generatedId = stmt.getInt(3);
+            Integer generatedId = stmt.getInt(3);
             critere.setId(generatedId);
 
             // ✅ Ajout dans le cache
@@ -124,7 +124,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             stmt.setString(1, critere.getName());
             stmt.setString(2, critere.getDescription());
             stmt.setInt(3, critere.getId());
-            int rows = stmt.executeUpdate();
+            Integer rows = stmt.executeUpdate();
 
             if (!connection.getAutoCommit()) connection.commit();
 
@@ -146,7 +146,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     }
 
     @Override
-    public boolean deleteById(int id) {
+    public boolean deleteById(Integer id) {
         try {
             // Supprimer toutes les notes liées à ce critère
             String deleteNotesSql = "DELETE FROM NOTES WHERE fk_crit = ?";
@@ -159,7 +159,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             String sql = "DELETE FROM CRITERES_EVALUATION WHERE numero = ?";
             try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setInt(1, id);
-                int rows = stmt.executeUpdate();
+                Integer rows = stmt.executeUpdate();
 
                 if (!connection.getAutoCommit()) connection.commit();
 

@@ -31,6 +31,7 @@ public class Restaurant implements IBusinessObject {
     private Set<BasicEvaluation> basicEvaluations;
     @Transient
     private Set<Evaluation> evaluations; // Il va falloir la remplir par la somme des deux autres listes, mais c'est pas grave
+    //EDIT : on va faire autrement, balek de l'héritage on fait juste les deux listes et quand on a besoin des deux on appelle les deux et point
     @Embedded
     private Localisation address; // ATTENTION, resto stocke une rue en String (adresse dans bd) et une fk pour la ville : fk_vill
     @ManyToOne(fetch = FetchType.LAZY)

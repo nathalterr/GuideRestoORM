@@ -24,7 +24,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
     }
 
     @Override
-    public Grade findById(int id) {
+    public Grade findById(Integer id) {
         // ✅ Vérifie d’abord le cache
         if (identityMap.containsKey(id)) {
             System.out.println("⚡ Grade " + id + " récupéré depuis l'Identity Map");
@@ -65,7 +65,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                int id = rs.getInt("numero");
+                Integer id = rs.getInt("numero");
                 Grade grade = identityMap.get(id);
 
                 if (grade == null) {
@@ -93,7 +93,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
             stmt.executeUpdate();
 
-            int generatedId = stmt.getInt(4);
+            Integer generatedId = stmt.getInt(4);
             grade.setId(generatedId);
             identityMap.put(generatedId, grade); // ✅ Ajouter au cache
 
@@ -118,7 +118,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
             stmt.setInt(3, grade.getCriteria().getId());
             stmt.setInt(4, grade.getId());
 
-            int updated = stmt.executeUpdate();
+            Integer updated = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             // ✅ Synchroniser le cache
@@ -139,11 +139,11 @@ public class GradeMapper extends AbstractMapper<Grade> {
     }
 
     @Override
-    public boolean deleteById(int id) {
+    public boolean deleteById(Integer id) {
         String sql = "DELETE FROM NOTES WHERE numero = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            int deleted = stmt.executeUpdate();
+            Integer deleted = stmt.executeUpdate();
 
             if (!connection.getAutoCommit()) connection.commit();
 
@@ -184,7 +184,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
             stmt.setInt(1, eval.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
                     Grade grade = identityMap.get(id);
                     if (grade == null) {
                         EvaluationCriteria crit = criteriaMapper.findById(rs.getInt("fk_crit"));
@@ -210,13 +210,13 @@ public class GradeMapper extends AbstractMapper<Grade> {
                 EvaluationCriteriaMapper critMapper = new EvaluationCriteriaMapper();
 
                 while (rs.next()) {
-                    int gradeId = rs.getInt("numero");
+                    Integer gradeId = rs.getInt("numero");
 
                     // ✅ Vérifie le cache d'identité avant de créer un nouvel objet
                     Grade grade = identityMap.get(gradeId);
                     if (grade == null) {
-                        int noteValue = rs.getInt("note");
-                        int critId = rs.getInt("fk_crit");
+                        Integer noteValue = rs.getInt("note");
+                        Integer critId = rs.getInt("fk_crit");
                         Grade newGrade = new Grade(
                                 gradeId,
                                 noteValue,

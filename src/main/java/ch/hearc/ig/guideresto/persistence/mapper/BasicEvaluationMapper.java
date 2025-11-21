@@ -29,8 +29,8 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         this.restaurantMapper = new RestaurantMapper();
     }
 
-    @Override
-    public BasicEvaluation findById(int id) {
+
+    public BasicEvaluation findById(Integer id) {
         if (identityMap.containsKey(id)) {
             return identityMap.get(id);
         }
@@ -65,7 +65,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                int id = rs.getInt("numero");
+                Integer id = rs.getInt("numero");
                 BasicEvaluation eval = identityMap.get(id);
                 if (eval == null) {
                     Restaurant restaurant = restaurantMapper.findById(rs.getInt("fk_rest"));
@@ -95,7 +95,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             stmt.setString(3, eval.getIpAddress());
             stmt.setInt(4, eval.getRestaurant().getId());
 
-            int affectedRows = stmt.executeUpdate();
+            Integer affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) throw new SQLException("Création échouée, aucune ligne insérée.");
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
@@ -127,7 +127,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             stmt.setInt(4, eval.getRestaurant().getId());
             stmt.setInt(5, eval.getId());
 
-            int rows = stmt.executeUpdate();
+            Integer rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
             if (rows > 0) identityMap.put(eval.getId(), eval);
             return rows > 0;
@@ -145,11 +145,11 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     }
 
     @Override
-    public boolean deleteById(int id) {
+    public boolean deleteById(Integer id) {
         String sql = "DELETE FROM LIKES WHERE numero = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            int rows = stmt.executeUpdate();
+            Integer rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
             if (rows > 0) identityMap.remove(id);
             return rows > 0;
@@ -182,7 +182,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             stmt.setInt(1, restaurant.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
                     BasicEvaluation eval = identityMap.get(id);
                     if (eval == null) {
                         eval = new BasicEvaluation(
@@ -203,14 +203,14 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         return evaluations;
     }
 
-    public BasicEvaluation findByIpAndRest(String ip, int restaurantId) throws SQLException {
+    public BasicEvaluation findByIpAndRest(String ip, Integer restaurantId) throws SQLException {
         String sql = "SELECT numero, date_eval, appreciation, adresse_ip, fk_rest FROM LIKES WHERE adresse_ip = ? AND fk_rest = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setString(1, ip);
             stmt.setInt(2, restaurantId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
                     if (identityMap.containsKey(id)) return identityMap.get(id);
 
                     BasicEvaluation eval = new BasicEvaluation();

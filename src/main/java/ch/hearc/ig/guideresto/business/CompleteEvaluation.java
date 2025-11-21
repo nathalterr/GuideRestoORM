@@ -13,15 +13,7 @@ import java.util.Set;
 @Entity
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SeqEval")
-    @SequenceGenerator(
-            name = "SeqEval",
-            sequenceName = "SEQ_EVAL", // MAJUSCULE ! Oracle = case-insensitive MAIS Hibernate ≠
-            allocationSize = 1
-    )
-    @Column(name="numero")
-    private int id;
+
     @Column(name="COMMENTAIRE")
     private String comment;
     @Column(name="NOM_UTILISATEUR")
@@ -70,8 +62,8 @@ public class CompleteEvaluation extends Evaluation {
 
     @Override
     public Integer getId() {
-        return this.id;
+        return super.getId();
     }
-
-    public void setId(int generatedId) {this.id=generatedId;}
+    @Override
+    public void setId(Integer generatedId) {super.setId(generatedId);}
 }

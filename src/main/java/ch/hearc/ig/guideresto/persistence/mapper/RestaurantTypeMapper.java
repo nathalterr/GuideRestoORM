@@ -27,7 +27,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     @Override
-    public RestaurantType findById(int id) {
+    public RestaurantType findById(Integer id) {
         // 🔹 Vérifie d'abord dans le cache
         if (identityMap.containsKey(id)) {
 
@@ -62,7 +62,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             stmt.setString(1, label);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
 
                     // 🔹 Vérifie le cache avant de créer un nouvel objet
                     if (identityMap.containsKey(id)) {
@@ -94,7 +94,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                int id = rs.getInt("numero");
+                Integer id = rs.getInt("numero");
 
                 RestaurantType type = identityMap.get(id);
                 if (type == null) {
@@ -124,7 +124,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             }
 
             // 🔹 Génération de l'ID via la séquence
-            int id;
+            Integer id;
             try (PreparedStatement seqStmt = connection.prepareStatement(
                     "SELECT SEQ_TYPES_GASTRONOMIQUES.NEXTVAL FROM dual"
             )) {
@@ -170,7 +170,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             stmt.setString(1, object.getLabel());
             stmt.setString(2, object.getDescription());
             stmt.setInt(3, object.getId());
-            int affected = stmt.executeUpdate();
+            Integer affected = stmt.executeUpdate();
 
             if (affected > 0) {
                 identityMap.put(object.getId(), object); // 🔹 Mise à jour du cache
@@ -190,11 +190,11 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     @Override
-    public boolean deleteById(int id) {
+    public boolean deleteById(Integer id) {
         String sql = "DELETE FROM TYPES_GASTRONOMIQUES WHERE numero = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            int affected = stmt.executeUpdate();
+            Integer affected = stmt.executeUpdate();
 
             if (affected > 0) {
                 identityMap.remove(id); // 🔹 Supprimer du cache
@@ -229,7 +229,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             stmt.setString(1, name);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
 
                     if (identityMap.containsKey(id)) {
                         return identityMap.get(id);

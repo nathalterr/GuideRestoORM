@@ -119,10 +119,10 @@ public class UserService {
     }
 
 
-    public int countLikes(Restaurant restaurant, boolean like) {
+    public Integer countLikes(Restaurant restaurant, boolean like) {
         if (restaurant == null || restaurant.getEvaluations() == null) return 0;
 
-        int count = 0;
+        Integer count = 0;
         for (Evaluation currentEval : restaurant.getEvaluations()) {
             if (currentEval instanceof BasicEvaluation) {
                 Boolean b = ((BasicEvaluation) currentEval).getLikeRestaurant();

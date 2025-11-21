@@ -2,6 +2,8 @@ package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
 import jakarta.persistence.*;
+
+import java.time.LocalTime;
 import java.util.HashSet;
 
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
@@ -21,8 +23,8 @@ public class MainTest {
 
 // --- Création du type de restaurant ---
         RestaurantType italian = new RestaurantType();
-        italian.setLabel("TEST_Italien");
-        italian.setDescription("TEST_Cuisine italienne traditionnelle");
+        italian.setLabel("TEST_Ithaztugtgrwlwiwen");
+        italian.setDescription("TEST_Cuiswhine iwtztutaliennegtrgtr trawditionnelle");
         italian.setRestaurants(new HashSet<>());
         em.persist(italian);
 
@@ -35,9 +37,9 @@ public class MainTest {
 
 // --- Création du restaurant ---
         Restaurant r1 = new Restaurant();
-        r1.setName("TEST_La Bella Vita");
-        r1.setDescription("TEST_Restaurant italien cosy");
-        r1.setWebsite("www.TEST_labellavita.fr");
+        r1.setName("TEST_La Bellah wita");
+        r1.setDescription("TEST_Restaurtzhant italien cosy");
+        r1.setWebsite("www.TEST_labgrtgtrelwlavhita.fr");
         r1.setAddress(loc);
         r1.setType(italian);
         r1.setCompleteEvaluations(new HashSet<>());
@@ -59,8 +61,8 @@ public class MainTest {
 
 // --- Création d'un critère ---
         EvaluationCriteria crit1 = new EvaluationCriteria();
-        crit1.setName("TEST_Qualité du plat");
-        crit1.setDescription("TEST_Évalue la qualité des plats");
+        crit1.setName("TEST_Quahliztututérgtg dwuw plat");
+        crit1.setDescription("TEST_Évawlue la qztutgrfgritwé desh plats");
         em.persist(crit1);
 
 // --- Création d'une note ---
@@ -69,6 +71,13 @@ public class MainTest {
         grade1.setEvaluation(eval1);
         grade1.setCriteria(crit1);
         em.persist(grade1);
+
+        BasicEvaluation be = new BasicEvaluation();
+        be.setRestaurant(r1);
+        be.setLikeRestaurant(true);
+        be.setVisitDate(new java.util.Date());
+        be.setIpAddress("9.8.7.6");
+        em.persist(be);
 
 // Ajout de la note dans l'évaluation
         eval1.getGrades().add(grade1);

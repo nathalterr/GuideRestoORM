@@ -7,9 +7,18 @@ import java.util.Date;
 /**
  * @author cedric.baudet
  */
-@MappedSuperclass
+@Entity
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public abstract class Evaluation implements IBusinessObject {
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SeqEval")
+    @SequenceGenerator(
+            name = "SeqEval",
+            sequenceName = "SEQ_EVAL", // MAJUSCULE ! Oracle = case-insensitive MAIS Hibernate ≠
+            allocationSize = 1
+    )
+    @Column(name="numero")
+    private Integer id;
     @Column(name="date_eval")
     private Date visitDate;
     @ManyToOne(fetch = FetchType.LAZY)
@@ -41,4 +50,11 @@ public abstract class Evaluation implements IBusinessObject {
         this.restaurant = restaurant;
     }
 
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
 }

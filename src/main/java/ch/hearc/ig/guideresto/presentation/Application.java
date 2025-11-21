@@ -29,7 +29,7 @@ entityManager.refresh(m);  // reprends le meme élément depuis la base.
         scanner = new Scanner(System.in);
         getEntityManager();
         System.out.println("Bienvenue dans GuideResto ! Que souhaitez-vous faire ?");
-        int choice;
+        Integer choice;
         do {
             printMainMenu();
             choice = readInt();
@@ -56,7 +56,7 @@ entityManager.refresh(m);  // reprends le meme élément depuis la base.
      *
      * @param choice Un nombre entre 0 et 5.
      */
-    private static void proceedMainMenu(int choice) {
+    private static void proceedMainMenu(Integer choice) {
         switch (choice) {
             case 1:
                 showRestaurantsList();

@@ -16,13 +16,12 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
 
     protected static final Logger logger = LogManager.getLogger();
 
-    public abstract T findById(int id);
+    public abstract T findById(Integer id);
     public abstract Set<T> findAll();
     public abstract T create(T object);
     public abstract boolean update(T object);
     public abstract boolean delete(T object);
-    public abstract boolean deleteById(int id);
-
+    public abstract boolean deleteById(Integer id);
     protected abstract String getSequenceQuery();
     protected abstract String getExistsQuery();
     protected abstract String getCountQuery();
@@ -32,7 +31,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @param id the ID to check
      * @return true si l'objet existe, false sinon
      */
-    public boolean exists(int id) {
+    public boolean exists(Integer id) {
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(getExistsQuery())) {
@@ -51,7 +50,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * Compte le nombre d'objets en base de données.
      * @return
      */
-    public int count() {
+    public Integer count() {
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(getCountQuery());

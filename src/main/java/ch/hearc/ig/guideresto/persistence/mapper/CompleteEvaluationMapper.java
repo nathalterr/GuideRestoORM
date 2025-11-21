@@ -41,7 +41,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     }
 
     @Override
-    public CompleteEvaluation findById(int id) {
+    public CompleteEvaluation findById(Integer id) {
         // ✅ Vérifie d'abord le cache
         if (identityMap.containsKey(id)) {
             System.out.println("⚡ Évaluation " + id + " récupérée depuis l'Identity Map");
@@ -85,7 +85,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                int id = rs.getInt("numero");
+                Integer id = rs.getInt("numero");
                 CompleteEvaluation eval = identityMap.get(id);
 
                 if (eval == null) {
@@ -127,7 +127,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
             stmt.executeUpdate();
 
-            int generatedId = stmt.getInt(5);
+            Integer generatedId = stmt.getInt(5);
             evaluation.setId(generatedId);
 
             // ✅ Ajout dans le cache
@@ -168,7 +168,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             stmt.setInt(4, evaluation.getRestaurant().getId());
             stmt.setInt(5, evaluation.getId());
 
-            int rows = stmt.executeUpdate();
+            Integer rows = stmt.executeUpdate();
 
             if (!connection.getAutoCommit()) connection.commit();
 
@@ -190,7 +190,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     }
 
     @Override
-    public boolean deleteById(int id) {
+    public boolean deleteById(Integer id) {
         try {
             // Supprimer d'abord les notes liées
             String deleteNotesSql = "DELETE FROM NOTES WHERE fk_comm = ?";
@@ -203,7 +203,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             String deleteCommentSql = "DELETE FROM COMMENTAIRES WHERE numero = ?";
             try (PreparedStatement stmt = connection.prepareStatement(deleteCommentSql)) {
                 stmt.setInt(1, id);
-                int deleted = stmt.executeUpdate();
+                Integer deleted = stmt.executeUpdate();
 
                 if (!connection.getAutoCommit()) connection.commit();
 
@@ -248,7 +248,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             stmt.setInt(1, restaurant.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
                     CompleteEvaluation eval = identityMap.get(id);
 
                     if (eval == null) {
@@ -276,7 +276,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return evaluations;
     }
 
-    public CompleteEvaluation findByUserAndRest(String username, int restaurantId) throws SQLException {
+    public CompleteEvaluation findByUserAndRest(String username, Integer restaurantId) throws SQLException {
         for (CompleteEvaluation eval : identityMap.values()) {
             if (eval.getUsername().equalsIgnoreCase(username)
                     && eval.getRestaurant() != null

@@ -3,7 +3,6 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 
-import jakarta.persistence.Entity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +43,8 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         this.typeMapper = typeMapper;
     }
 
-    @Override
-    public Restaurant findById(int id) {
+
+    public Restaurant findById(Integer id) {
         // Vérifie le cache d'abord
         if (identityMap.containsKey(id)) {
             return identityMap.get(id);
@@ -95,11 +94,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                int id = rs.getInt("numero");
+                Integer id = rs.getInt("numero");
 
                 // Création des objets associés
-                int typeId = rs.getInt("fk_type");
-                int cityId = rs.getInt("fk_vill");
+                Integer typeId = rs.getInt("fk_type");
+                Integer cityId = rs.getInt("fk_vill");
 
                 RestaurantType type = this.typeMapper.findById(typeId);
                 City city = this.cityMapper.findById(cityId);
@@ -201,7 +200,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
             updateAddress(restaurant, restaurant.getAddress().getStreet(), restaurant.getAddress().getCity());
 
-            int rows = stmt.executeUpdate();
+            Integer rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             identityMap.put(restaurant.getId(), restaurant);
@@ -217,7 +216,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     @Override
     public boolean delete(Restaurant restaurant) {
         try {
-            int restId = restaurant.getId();
+            Integer restId = restaurant.getId();
 
             // Supprimer les CompleteEvaluations et Grades associés
             CompleteEvaluationMapper completeEvalMapper = new CompleteEvaluationMapper();
@@ -247,11 +246,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     }
 
     @Override
-    public boolean deleteById(int id) {
+    public boolean deleteById(Integer id) {
         String sql = "DELETE FROM RESTAURANTS WHERE numero = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            int rows = stmt.executeUpdate();
+            Integer rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             if (rows > 0) removeFromCache(id);
@@ -296,7 +295,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             stmt.setString(1, restaurant.getAddress().getStreet());
             stmt.setInt(2, restaurant.getAddress().getCity().getId());
             stmt.setInt(3, restaurant.getId());
-            int rows = stmt.executeUpdate();
+            Integer rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             identityMap.put(restaurant.getId(), restaurant);
@@ -304,7 +303,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         }
     }
 
-    public void removeFromCache(int id) {
+    public void removeFromCache(Integer id) {
         identityMap.remove(id);
     }
 
@@ -324,7 +323,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             stmt.setString(1, cityName);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
                     Restaurant restaurant = identityMap.get(id);
 
                     if (restaurant == null) {
@@ -366,7 +365,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             stmt.setString(1, typeLabel);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
                     Restaurant restaurant = identityMap.get(id);
 
                     if (restaurant == null) {
@@ -404,7 +403,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
 
                     // Vérifie le cache d'abord
                     Restaurant restaurant = identityMap.get(id);

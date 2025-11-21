@@ -24,7 +24,7 @@ public class CityMapper extends AbstractMapper<City> {
     }
 
     @Override
-    public City findById(int id) {
+    public City findById(Integer id) {
         // Vérifie le cache d'abord
         if (identityMap.containsKey(id)) {
             return identityMap.get(id);
@@ -61,7 +61,7 @@ public class CityMapper extends AbstractMapper<City> {
         try (PreparedStatement stmt = connection.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
-                int id = rs.getInt("numero");
+                Integer id = rs.getInt("numero");
                 City city = identityMap.get(id);
                 if (city == null) {
                     city = new City(
@@ -90,7 +90,7 @@ public class CityMapper extends AbstractMapper<City> {
             stmt.registerOutParameter(3, Types.INTEGER);
 
             stmt.executeUpdate();
-            int generatedId = stmt.getInt(3);
+            Integer generatedId = stmt.getInt(3);
             city.setId(generatedId);
             identityMap.put(generatedId, city);
 
@@ -121,7 +121,7 @@ public class CityMapper extends AbstractMapper<City> {
             stmt.setString(1, city.getZipCode());
             stmt.setString(2, city.getCityName());
             stmt.setInt(3, city.getId());
-            int updated = stmt.executeUpdate();
+            Integer updated = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
             if (updated > 0) identityMap.put(city.getId(), city);
             return updated > 0;
@@ -137,11 +137,11 @@ public class CityMapper extends AbstractMapper<City> {
     }
 
     @Override
-    public boolean deleteById(int id) {
+    public boolean deleteById(Integer id) {
         String sql = "DELETE FROM VILLES WHERE numero = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
-            int deleted = stmt.executeUpdate();
+            Integer deleted = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
             if (deleted > 0) identityMap.remove(id);
             return deleted > 0;
@@ -181,7 +181,7 @@ public class CityMapper extends AbstractMapper<City> {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
 
                     // Vérifie encore le cache au cas où
                     if (identityMap.containsKey(id)) return identityMap.get(id);
@@ -210,7 +210,7 @@ public class CityMapper extends AbstractMapper<City> {
             stmt.setString(1, zipCode);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    int id = rs.getInt("numero");
+                    Integer id = rs.getInt("numero");
                     if (identityMap.containsKey(id)) return identityMap.get(id);
                     City city = new City(
                             id,
