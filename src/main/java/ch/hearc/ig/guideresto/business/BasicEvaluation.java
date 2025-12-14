@@ -11,13 +11,6 @@ import java.util.Date;
 @Table(name="LIKES")
 public class BasicEvaluation extends Evaluation {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SeqEval")
-    @SequenceGenerator(
-            name = "SeqEval",
-            sequenceName = "SEQ_EVAL", // MAJUSCULE ! Oracle = case-insensitive MAIS Hibernate ≠
-            allocationSize = 1
-    )
     @Column
     private int id;
     @Column(name="APPRECIATION")

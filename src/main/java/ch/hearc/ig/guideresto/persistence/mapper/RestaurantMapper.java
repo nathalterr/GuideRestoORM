@@ -20,11 +20,61 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     private static final Logger logger = LoggerFactory.getLogger(RestaurantMapper.class);
     private final Connection connection;
     private static final Map<Integer, Restaurant> identityMap = new HashMap<>();
-    private CompleteEvaluationMapper completeEvalMapper;
-    private GradeMapper gradeMapper;
-    private BasicEvaluationMapper basicEvalMapper;
     private CityMapper cityMapper;
     public RestaurantTypeMapper typeMapper;
+
+    private static final String SQL_FIND_BY_ID = """
+        SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill
+        FROM RESTAURANTS
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_ALL = """
+        SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill
+        FROM RESTAURANTS
+        """;
+
+    private static final String SQL_INSERT = """
+        INSERT INTO RESTAURANTS (numero, nom, description, site_web, adresse, fk_type, fk_vill)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """;
+
+    private static final String SQL_UPDATE = """
+        UPDATE RESTAURANTS
+        SET nom = ?, description = ?, site_web = ?, fk_type = ?
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_UPDATE_ADDRESS = """
+        UPDATE RESTAURANTS
+        SET adresse = ?, fk_vill = ?
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_DELETE_BY_ID = """
+        DELETE FROM RESTAURANTS
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_BY_CITY = """
+        SELECT r.numero, r.nom, r.description, r.site_web, r.adresse, r.fk_type, r.fk_vill
+        FROM RESTAURANTS r
+        INNER JOIN VILLES v ON r.fk_vill = v.numero
+        WHERE v.nom_ville = ?
+        """;
+
+    private static final String SQL_FIND_BY_TYPE = """
+        SELECT r.numero, r.nom, r.description, r.site_web, r.adresse, r.fk_type, r.fk_vill
+        FROM RESTAURANTS r
+        INNER JOIN TYPES_GASTRONOMIQUES t ON r.fk_type = t.numero
+        WHERE t.libelle = ?
+        """;
+
+    private static final String SQL_FIND_BY_NAME = """
+        SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill
+        FROM RESTAURANTS
+        WHERE LOWER(nom) LIKE LOWER(?)
+        """;
 
     public RestaurantMapper() {
         this.connection = getConnection();
@@ -33,9 +83,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     public void setDependenciesEval(CompleteEvaluationMapper completeEvalMapper,
                                     GradeMapper gradeMapper,
                                     BasicEvaluationMapper basicEvalMapper) {
-        this.completeEvalMapper = completeEvalMapper;
-        this.gradeMapper = gradeMapper;
-        this.basicEvalMapper = basicEvalMapper;
     }
 
     public void setDependenciesCityType(CityMapper cityMapper, RestaurantTypeMapper typeMapper){
@@ -50,9 +97,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             return identityMap.get(id);
         }
 
-        String sql = "SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill FROM RESTAURANTS WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
             stmt.setInt(1, id);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -88,9 +133,8 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     public Set<Restaurant> findAll() {
         identityMap.clear(); // vider le cache pour recharger depuis la DB
         Set<Restaurant> restaurants = new LinkedHashSet<>();
-        String sql = "SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill FROM RESTAURANTS";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
@@ -157,8 +201,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             }
 
             // 🔹 Insert dans la table
-            String sql = "INSERT INTO RESTAURANTS (numero, nom, description, site_web, adresse, fk_type, fk_vill) VALUES (?, ?, ?, ?, ?, ?, ?)";
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            try (PreparedStatement stmt = connection.prepareStatement(SQL_INSERT)) {
                 stmt.setInt(1, restaurant.getId());
                 stmt.setString(2, restaurant.getName());
                 stmt.setString(3, restaurant.getDescription());
@@ -182,7 +225,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             try {
                 if (!connection.getAutoCommit()) connection.rollback();
             } catch (SQLException ex) {
-                logger.error("Rollback failed: {}", ex.getMessage());
+                logger.error("Create - Rollback failed: {}", ex.getMessage());
             }
             return null;
         }
@@ -190,8 +233,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean update(Restaurant restaurant) {
-        String sql = "UPDATE RESTAURANTS SET nom = ?, description = ?, site_web = ?, fk_type = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setString(1, restaurant.getName());
             stmt.setString(2, restaurant.getDescription());
             stmt.setString(3, restaurant.getWebsite());
@@ -200,7 +242,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
             updateAddress(restaurant, restaurant.getAddress().getStreet(), restaurant.getAddress().getCity());
 
-            Integer rows = stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             identityMap.put(restaurant.getId(), restaurant);
@@ -208,7 +250,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
         } catch (SQLException e) {
             logger.error("Erreur update Restaurant: {}", e.getMessage());
-            try { if (!connection.getAutoCommit()) connection.rollback(); } catch (SQLException ex) { logger.error("Rollback failed: {}", ex.getMessage()); }
+            try { if (!connection.getAutoCommit()) connection.rollback(); } catch (SQLException ex) { logger.error("Update - Rollback failed: {}", ex.getMessage()); }
             return false;
         }
     }
@@ -247,10 +289,9 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean deleteById(Integer id) {
-        String sql = "DELETE FROM RESTAURANTS WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
             stmt.setInt(1, id);
-            Integer rows = stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             if (rows > 0) removeFromCache(id);
@@ -290,12 +331,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             newCity.getRestaurants().add(restaurant);
         }
 
-        String sql = "UPDATE RESTAURANTS SET adresse = ?, fk_vill = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE_ADDRESS)) {
             stmt.setString(1, restaurant.getAddress().getStreet());
             stmt.setInt(2, restaurant.getAddress().getCity().getId());
             stmt.setInt(3, restaurant.getId());
-            Integer rows = stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             identityMap.put(restaurant.getId(), restaurant);
@@ -315,11 +355,8 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
      */
     public Set<Restaurant> findByCity(String cityName) throws SQLException {
         Set<Restaurant> restaurants = new HashSet<>();
-        String sql = "SELECT r.numero, r.nom, r.description, r.site_web, r.adresse, r.fk_type, r.fk_vill " +
-                "FROM RESTAURANTS r INNER JOIN VILLES v ON r.fk_vill = v.numero " +
-                "WHERE v.nom_ville = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_CITY)) {
             stmt.setString(1, cityName);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -357,11 +394,8 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
      */
     public Set<Restaurant> findByRestaurantType(String typeLabel) throws SQLException {
         Set<Restaurant> restaurants = new HashSet<>();
-        String sql = "SELECT r.numero, r.nom, r.description, r.site_web, r.adresse, r.fk_type, r.fk_vill " +
-                "FROM RESTAURANTS r INNER JOIN TYPES_GASTRONOMIQUES t ON r.fk_type = t.numero " +
-                "WHERE t.libelle = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_TYPE)) {
             stmt.setString(1, typeLabel);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -395,10 +429,8 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     }
     public Set<Restaurant> findByName(String name) throws SQLException {
         Set<Restaurant> restaurants = new LinkedHashSet<>();
-        String sql = "SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill " +
-                "FROM RESTAURANTS WHERE LOWER(nom) LIKE LOWER(?)";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
             stmt.setString(1, "%" + name + "%");
 
             try (ResultSet rs = stmt.executeQuery()) {

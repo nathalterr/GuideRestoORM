@@ -14,6 +14,9 @@ import java.util.Set;
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {
 
+
+    @Column(name="numero")
+    private Integer id;
     @Column(name="COMMENTAIRE")
     private String comment;
     @Column(name="NOM_UTILISATEUR")

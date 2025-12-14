@@ -15,6 +15,46 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     private static final Map<Integer, EvaluationCriteria> identityMap = new HashMap<>();
     private final Connection connection;
+    private static final String SQL_FIND_BY_ID = """
+        SELECT numero, nom, description
+        FROM CRITERES_EVALUATION
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_ALL = """
+        SELECT numero, nom, description
+        FROM CRITERES_EVALUATION
+        """;
+
+    private static final String SQL_CREATE = """
+        BEGIN
+            INSERT INTO CRITERES_EVALUATION (nom, description)
+            VALUES (?, ?)
+            RETURNING numero INTO ?;
+        END;
+        """;
+
+    private static final String SQL_UPDATE = """
+        UPDATE CRITERES_EVALUATION
+        SET nom = ?, description = ?
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_DELETE_NOTES = """
+        DELETE FROM NOTES
+        WHERE fk_crit = ?
+        """;
+
+    private static final String SQL_DELETE_BY_ID = """
+        DELETE FROM CRITERES_EVALUATION
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_BY_NAME = """
+        SELECT numero, nom, description
+        FROM CRITERES_EVALUATION
+        WHERE nom = ?
+        """;
 
     public EvaluationCriteriaMapper() {
         this.connection = getConnection();
@@ -27,8 +67,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             return identityMap.get(id);
         }
 
-        String sql = "SELECT numero, nom, description FROM CRITERES_EVALUATION WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -50,9 +89,8 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     @Override
     public Set<EvaluationCriteria> findAll() {
         Set<EvaluationCriteria> criteres = new LinkedHashSet<>();
-        String sql = "SELECT numero, nom, description FROM CRITERES_EVALUATION";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
@@ -77,9 +115,8 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public EvaluationCriteria create(EvaluationCriteria critere) {
-        String sql = "BEGIN INSERT INTO CRITERES_EVALUATION (nom, description) " +
-                "VALUES (?, ?) RETURNING numero INTO ?; END;";
-        try (CallableStatement stmt = connection.prepareCall(sql)) {
+
+        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
             stmt.setString(1, critere.getName());
             stmt.setString(2, critere.getDescription());
             stmt.registerOutParameter(3, Types.INTEGER);
@@ -119,12 +156,11 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public boolean update(EvaluationCriteria critere) {
-        String sql = "UPDATE CRITERES_EVALUATION SET nom = ?, description = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setString(1, critere.getName());
             stmt.setString(2, critere.getDescription());
             stmt.setInt(3, critere.getId());
-            Integer rows = stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
 
             if (!connection.getAutoCommit()) connection.commit();
 
@@ -149,17 +185,15 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     public boolean deleteById(Integer id) {
         try {
             // Supprimer toutes les notes liées à ce critère
-            String deleteNotesSql = "DELETE FROM NOTES WHERE fk_crit = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(deleteNotesSql)) {
+            try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_NOTES)) {
                 stmt.setInt(1, id);
                 stmt.executeUpdate();
             }
 
             // Supprimer le critère
-            String sql = "DELETE FROM CRITERES_EVALUATION WHERE numero = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
                 stmt.setInt(1, id);
-                Integer rows = stmt.executeUpdate();
+                int rows = stmt.executeUpdate();
 
                 if (!connection.getAutoCommit()) connection.commit();
 
@@ -198,9 +232,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                 return crit;
             }
         }
-
-        String sql = "SELECT numero, nom, description FROM CRITERES_EVALUATION WHERE nom = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
             stmt.setString(1, name);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {

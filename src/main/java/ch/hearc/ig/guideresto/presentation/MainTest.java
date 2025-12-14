@@ -32,8 +32,6 @@ public class MainTest {
         Localisation loc = new Localisation();
         loc.setStreet("TEST_12 rue de Rivoli");
         loc.setCity(paris);
-// Si Localisation est @Entity, persister
-// em.persist(loc);
 
 // --- Création du restaurant ---
         Restaurant r1 = new Restaurant();

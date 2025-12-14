@@ -24,6 +24,46 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     private final RestaurantMapper restaurantMapper;
     private final Map<Integer, BasicEvaluation> identityMap = new HashMap<>();
 
+    private static final String SQL_FIND_BY_ID = """
+        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
+        FROM LIKES
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_ALL = """
+        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
+        FROM LIKES
+        """;
+
+    private static final String SQL_CREATE = """
+        INSERT INTO LIKES (date_eval, appreciation, adresse_ip, fk_rest)
+        VALUES (?, ?, ?, ?)
+        """;
+
+    private static final String SQL_UPDATE = """
+        UPDATE LIKES
+        SET date_eval = ?, appreciation = ?, adresse_ip = ?, fk_rest = ?
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_DELETE_BY_ID = """
+        DELETE FROM LIKES
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_BY_RESTAURANT = """
+        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
+        FROM LIKES
+        WHERE fk_rest = ?
+        """;
+
+    private static final String SQL_FIND_BY_IP_AND_RESTAURANT = """
+        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
+        FROM LIKES
+        WHERE adresse_ip = ? AND fk_rest = ?
+        """;
+
+
     public BasicEvaluationMapper() {
         this.connection = getConnection();
         this.restaurantMapper = new RestaurantMapper();
@@ -35,8 +75,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             return identityMap.get(id);
         }
 
-        String sql = "SELECT numero, date_eval, appreciation, adresse_ip, fk_rest FROM LIKES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -61,8 +100,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     @Override
     public Set<BasicEvaluation> findAll() {
         Set<BasicEvaluation> evaluations = new HashSet<>();
-        String sql = "SELECT numero, date_eval, appreciation, adresse_ip, fk_rest FROM LIKES";
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL );
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 Integer id = rs.getInt("numero");
@@ -88,14 +126,13 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public BasicEvaluation create(BasicEvaluation eval) {
-        String sql = "INSERT INTO LIKES (date_eval, appreciation, adresse_ip, fk_rest) VALUES (?, ?, ?, ?)";
-        try (PreparedStatement stmt = connection.prepareStatement(sql, new String[]{"numero"})) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_CREATE, new String[]{"numero"})) {
             stmt.setDate(1, new java.sql.Date(eval.getVisitDate().getTime()));
             stmt.setString(2, eval.getLikeRestaurant() != null && eval.getLikeRestaurant() ? "Y" : "N");
             stmt.setString(3, eval.getIpAddress());
             stmt.setInt(4, eval.getRestaurant().getId());
 
-            Integer affectedRows = stmt.executeUpdate();
+            int affectedRows = stmt.executeUpdate();
             if (affectedRows == 0) throw new SQLException("Création échouée, aucune ligne insérée.");
 
             try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
@@ -119,15 +156,14 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public boolean update(BasicEvaluation eval) {
-        String sql = "UPDATE LIKES SET date_eval = ?, appreciation = ?, adresse_ip = ?, fk_rest = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setDate(1, new java.sql.Date(eval.getVisitDate().getTime()));
             stmt.setString(2, eval.getLikeRestaurant() != null && eval.getLikeRestaurant() ? "Y" : "N");
             stmt.setString(3, eval.getIpAddress());
             stmt.setInt(4, eval.getRestaurant().getId());
             stmt.setInt(5, eval.getId());
 
-            Integer rows = stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
             if (rows > 0) identityMap.put(eval.getId(), eval);
             return rows > 0;
@@ -146,10 +182,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public boolean deleteById(Integer id) {
-        String sql = "DELETE FROM LIKES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
             stmt.setInt(1, id);
-            Integer rows = stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
             if (rows > 0) identityMap.remove(id);
             return rows > 0;
@@ -177,8 +212,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     public Set<BasicEvaluation> findByRestaurant(Restaurant restaurant) {
         Set<BasicEvaluation> evaluations = new HashSet<>();
-        String sql = "SELECT numero, date_eval, appreciation, adresse_ip, fk_rest FROM LIKES WHERE fk_rest = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_RESTAURANT)) {
             stmt.setInt(1, restaurant.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -204,8 +238,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     }
 
     public BasicEvaluation findByIpAndRest(String ip, Integer restaurantId) throws SQLException {
-        String sql = "SELECT numero, date_eval, appreciation, adresse_ip, fk_rest FROM LIKES WHERE adresse_ip = ? AND fk_rest = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_IP_AND_RESTAURANT)) {
             stmt.setString(1, ip);
             stmt.setInt(2, restaurantId);
             try (ResultSet rs = stmt.executeQuery()) {
