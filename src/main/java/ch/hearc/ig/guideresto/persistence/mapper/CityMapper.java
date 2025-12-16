@@ -1,7 +1,10 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
+import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,6 +15,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class CityMapper extends AbstractMapper<City> {
 
@@ -41,11 +45,6 @@ public class CityMapper extends AbstractMapper<City> {
     private static final String SQL_UPDATE = """
         UPDATE VILLES
         SET code_postal = ?, nom_ville = ?
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_DELETE_BY_ID = """
-        DELETE FROM VILLES
         WHERE numero = ?
         """;
 
@@ -180,14 +179,27 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public boolean deleteById(Integer id) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
-            stmt.setInt(1, id);
-            int deleted = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-            if (deleted > 0) identityMap.remove(id);
-            return deleted > 0;
-        } catch (SQLException e) {
-            logger.error("deleteById SQLException: {}", e.getMessage());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            City entity = em.find(City.class, id);
+            if (entity == null) {
+                tx.commit();
+                return false;
+            }
+
+            em.remove(entity);
+            tx.commit();
+            return true;
+
+        } catch (Exception ex) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("City - Exception in deleteById", ex);
             return false;
         }
     }

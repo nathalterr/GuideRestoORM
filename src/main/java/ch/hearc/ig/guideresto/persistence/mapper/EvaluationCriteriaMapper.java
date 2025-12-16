@@ -2,6 +2,8 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 
 import ch.hearc.ig.guideresto.business.EvaluationCriteria;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 
 import java.sql.*;
 import java.util.HashMap;
@@ -10,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria> {
 
@@ -37,16 +40,6 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     private static final String SQL_UPDATE = """
         UPDATE CRITERES_EVALUATION
         SET nom = ?, description = ?
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_DELETE_NOTES = """
-        DELETE FROM NOTES
-        WHERE fk_crit = ?
-        """;
-
-    private static final String SQL_DELETE_BY_ID = """
-        DELETE FROM CRITERES_EVALUATION
         WHERE numero = ?
         """;
 
@@ -183,28 +176,28 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public boolean deleteById(Integer id) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
         try {
-            // Supprimer toutes les notes liées à ce critère
-            try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_NOTES)) {
-                stmt.setInt(1, id);
-                stmt.executeUpdate();
+            tx.begin();
+
+            EvaluationCriteria criteria =
+                    em.find(EvaluationCriteria.class, id);
+
+            if (criteria == null) {
+                tx.commit();
+                return false;
             }
 
-            // Supprimer le critère
-            try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
-                stmt.setInt(1, id);
-                int rows = stmt.executeUpdate();
+            em.remove(criteria);
 
-                if (!connection.getAutoCommit()) connection.commit();
+            tx.commit();
+            return true;
 
-                // ✅ Supprimer du cache
-                if (rows > 0) identityMap.remove(id);
-
-                return rows > 0;
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors de la suppression du critère : {}", e.getMessage());
-            try { connection.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+        } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
+            logger.error("EvaluationCriteria - Erreur lors de deleteById", e);
             return false;
         }
     }

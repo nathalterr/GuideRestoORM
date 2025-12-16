@@ -1,7 +1,10 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
+import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,12 +18,14 @@ import java.util.Map;
 import java.util.Set;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     private static final Logger logger = LoggerFactory.getLogger(RestaurantTypeMapper.class);
     private final Connection connection;
     private final Map<Integer, RestaurantType> identityMap = new HashMap<>();
+
     private static final String SQL_FIND_BY_ID = """
     SELECT numero, libelle, description
     FROM TYPES_GASTRONOMIQUES
@@ -47,9 +52,6 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     private static final String SQL_UPDATE = """
     UPDATE TYPES_GASTRONOMIQUES SET libelle = ?, description = ? WHERE numero = ?
     """;
-    private static final String SQL_DELETE_BY_ID = """
-    DELETE FROM TYPES_GASTRONOMIQUES WHERE numero = ?
-    """;
 
     private static final String SQL_EXISTS_BY_NAME = """
     SELECT 1 FROM TYPES_GASTRONOMIQUES
@@ -68,7 +70,6 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     INSERT INTO TYPES_GASTRONOMIQUES (numero, libelle, description)
     VALUES (?, ?, ?)
     """;
-
 
 
     public RestaurantTypeMapper() {
@@ -257,24 +258,33 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     @Override
-    public boolean delete(RestaurantType object) {
-        return deleteById(object.getId());
+    public boolean delete(RestaurantType typeResto) {
+        return deleteById(typeResto.getId());
     }
 
     @Override
     public boolean deleteById(Integer id) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
-            stmt.setInt(1, id);
-            int affected = stmt.executeUpdate();
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            if (affected > 0) {
-                identityMap.remove(id); // 🔹 Supprimer du cache
+        try {
+            tx.begin();
+
+            RestaurantType entity = em.find(RestaurantType.class, id);
+            if (entity == null) {
+                tx.commit();
+                return false;
             }
 
-            if (!connection.getAutoCommit()) connection.commit();
-            return affected > 0;
-        } catch (SQLException ex) {
-            logger.error("deleteById SQLException: {}", ex.getMessage());
+            em.remove(entity);
+            tx.commit();
+            return true;
+
+        } catch (Exception ex) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("RestaurantType - Exception in deleteById", ex);
             return false;
         }
     }

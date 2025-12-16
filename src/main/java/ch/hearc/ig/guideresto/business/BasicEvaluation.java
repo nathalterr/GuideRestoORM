@@ -17,6 +17,9 @@ public class BasicEvaluation extends Evaluation {
     private Boolean likeRestaurant;
     @Column(name="ADRESSE_IP")
     private String ipAddress;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_rest", nullable = false)
+    private Restaurant restaurant;
 
     public BasicEvaluation() {
         this(null, null, null, null);

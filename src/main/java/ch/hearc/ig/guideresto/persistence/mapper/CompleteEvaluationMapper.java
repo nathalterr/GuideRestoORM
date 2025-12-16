@@ -3,11 +3,14 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 
 import java.sql.*;
 import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation> {
 
@@ -38,16 +41,6 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     private static final String SQL_UPDATE = """
         UPDATE COMMENTAIRES
         SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest = ?
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_DELETE_NOTES = """
-        DELETE FROM NOTES
-        WHERE fk_comm = ?
-        """;
-
-    private static final String SQL_DELETE_BY_ID = """
-        DELETE FROM COMMENTAIRES
         WHERE numero = ?
         """;
 
@@ -230,34 +223,28 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public boolean deleteById(Integer id) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
         try {
-            // Supprimer d'abord les notes liées
-            try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_NOTES)) {
-                stmt.setInt(1, id);
-                stmt.executeUpdate();
+            tx.begin();
+
+            CompleteEvaluation evaluation =
+                    em.find(CompleteEvaluation.class, id);
+
+            if (evaluation == null) {
+                tx.commit();
+                return false;
             }
 
-            // Supprimer le commentaire
-            try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
-                stmt.setInt(1, id);
-                int deleted = stmt.executeUpdate();
+            em.remove(evaluation);
 
-                if (!connection.getAutoCommit()) connection.commit();
+            tx.commit();
+            return true;
 
-                if (deleted > 0) {
-                    identityMap.remove(id);
-                }
-
-                return deleted > 0;
-            }
-
-        } catch (SQLException ex) {
-            logger.error("Erreur deleteById CompleteEvaluation: {}", ex.getMessage());
-            try {
-                if (!connection.getAutoCommit()) connection.rollback();
-            } catch (SQLException rollbackEx) {
-                logger.error("Rollback échoué : {}", rollbackEx.getMessage());
-            }
+        } catch (Exception ex) {
+            if (tx.isActive()) tx.rollback();
+            logger.error("CompleteEvaluation - Erreur deleteById", ex);
             return false;
         }
     }

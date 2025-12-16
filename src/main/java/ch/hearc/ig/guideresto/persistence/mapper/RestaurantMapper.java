@@ -3,6 +3,8 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +15,7 @@ import java.sql.SQLException;
 import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 
 public class RestaurantMapper extends AbstractMapper<Restaurant> {
@@ -48,11 +51,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     private static final String SQL_UPDATE_ADDRESS = """
         UPDATE RESTAURANTS
         SET adresse = ?, fk_vill = ?
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_DELETE_BY_ID = """
-        DELETE FROM RESTAURANTS
         WHERE numero = ?
         """;
 
@@ -257,52 +255,39 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean delete(Restaurant restaurant) {
+        if (restaurant == null || restaurant.getId() == null) {
+            return false;
+        }
+        return deleteById(restaurant.getId());
+    }
+
+    public boolean deleteById(Integer id) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
         try {
-            Integer restId = restaurant.getId();
+            tx.begin();
 
-            // Supprimer les CompleteEvaluations et Grades associés
-            CompleteEvaluationMapper completeEvalMapper = new CompleteEvaluationMapper();
-            GradeMapper gradeMapper = new GradeMapper();
-            BasicEvaluationMapper basicEvalMapper = new BasicEvaluationMapper();
-
-            for (CompleteEvaluation eval : completeEvalMapper.findByRestaurant(restaurant)) {
-                for (Grade grade : gradeMapper.findByCompleteEvaluation(eval)) {
-                    gradeMapper.delete(grade);
-                }
-                completeEvalMapper.delete(eval);
+            Restaurant rest = em.find(Restaurant.class, id);
+            if (rest == null) {
+                tx.commit();
+                return false;
             }
 
-            // Supprimer les Likes
-            for (BasicEvaluation like : basicEvalMapper.findByRestaurant(restaurant)) {
-                basicEvalMapper.delete(like);
-            }
+            em.remove(rest); // Hibernate supprime : CompleteEvaluation -> Grades + BasicEvaluation
 
-            boolean deleted = deleteById(restId);
-            if (deleted) removeFromCache(restId);
-            return deleted;
+            tx.commit();
+
+            removeFromCache(id); // si tu gères un cache à part
+            return true;
 
         } catch (Exception e) {
-            logger.error("Erreur delete Restaurant complet: {}", e.getMessage());
+            if (tx.isActive()) tx.rollback();
+            logger.error("Restaurant - ErrordDeleteByID", e);
             return false;
         }
     }
 
-    @Override
-    public boolean deleteById(Integer id) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
-            stmt.setInt(1, id);
-            int rows = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-
-            if (rows > 0) removeFromCache(id);
-            return rows > 0;
-
-        } catch (SQLException e) {
-            logger.error("Erreur deleteById Restaurant: {}", e.getMessage());
-            try { if (!connection.getAutoCommit()) connection.rollback(); } catch (SQLException ex) { logger.error("Rollback failed: {}", ex.getMessage()); }
-            return false;
-        }
-    }
 
     @Override
     protected String getSequenceQuery() {

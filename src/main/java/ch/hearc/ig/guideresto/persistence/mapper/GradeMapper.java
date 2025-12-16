@@ -4,11 +4,15 @@ import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.EvaluationCriteria;
 import ch.hearc.ig.guideresto.business.Grade;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.EntityTransaction;
 
 import java.sql.*;
 import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class GradeMapper extends AbstractMapper<Grade> {
 
@@ -39,11 +43,6 @@ public class GradeMapper extends AbstractMapper<Grade> {
     private static final String SQL_UPDATE = """
         UPDATE NOTES
         SET note = ?, fk_comm = ?, fk_crit = ?
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_DELETE_BY_ID = """
-        DELETE FROM NOTES
         WHERE numero = ?
         """;
 
@@ -178,24 +177,29 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public boolean deleteById(Integer id) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
-            stmt.setInt(1, id);
-            int deleted = stmt.executeUpdate();
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            if (!connection.getAutoCommit()) connection.commit();
+        try {
+            tx.begin();
 
-            // ✅ Retirer du cache
-            if (deleted > 0) identityMap.remove(id);
+            Grade ref = em.getReference(Grade.class, id);
+            em.remove(ref);
 
-            return deleted > 0;
-        } catch (SQLException ex) {
-            System.err.println("Erreur deleteById Grade : " + ex.getMessage());
-            try { connection.rollback(); } catch (SQLException e) {
-                System.err.println("Rollback échoué : " + e.getMessage());
-            }
+            tx.commit();
+            return true;
+
+        } catch (EntityNotFoundException e) {
+            if (tx.isActive()) tx.rollback();
+            return false;
+
+        } catch (Exception ex) {
+            if (tx.isActive()) tx.rollback();
+            logger.error("Exception in deleteById", ex);
             return false;
         }
     }
+
 
     @Override
     protected String getSequenceQuery() {

@@ -3,6 +3,9 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import org.hibernate.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
@@ -43,11 +47,6 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     private static final String SQL_UPDATE = """
         UPDATE LIKES
         SET date_eval = ?, appreciation = ?, adresse_ip = ?, fk_rest = ?
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_DELETE_BY_ID = """
-        DELETE FROM LIKES
         WHERE numero = ?
         """;
 
@@ -182,18 +181,31 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public boolean deleteById(Integer id) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_DELETE_BY_ID)) {
-            stmt.setInt(1, id);
-            int rows = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-            if (rows > 0) identityMap.remove(id);
-            return rows > 0;
-        } catch (SQLException ex) {
-            logger.error("SQLException in deleteById: {}", ex.getMessage());
-            try { if (!connection.getAutoCommit()) connection.rollback(); } catch (SQLException r) { logger.error("Rollback failed: {}", r.getMessage()); }
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            BasicEvaluation entity = em.find(BasicEvaluation.class, id);
+            if (entity == null) {
+                tx.commit();
+                return false;
+            }
+
+            em.remove(entity);
+            tx.commit();
+            return true;
+
+        } catch (Exception ex) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Basic Evaluation - Exception in deleteById", ex);
             return false;
         }
     }
+
 
     @Override
     protected String getSequenceQuery() {
