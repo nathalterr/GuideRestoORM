@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -69,7 +70,7 @@ public class UserService {
         return restaurantMapper.findAll();
     }
 
-    public Set<Restaurant> findRestaurantsByName(String name) throws SQLException{
+    public List<Restaurant> findRestaurantsByName(String name) throws SQLException{
         return restaurantMapper.findByName(name);
     }
 

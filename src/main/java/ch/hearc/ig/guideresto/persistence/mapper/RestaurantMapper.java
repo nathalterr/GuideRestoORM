@@ -412,44 +412,15 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
         return restaurants;
     }
-    public Set<Restaurant> findByName(String name) throws SQLException {
-        Set<Restaurant> restaurants = new LinkedHashSet<>();
 
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
-            stmt.setString(1, "%" + name + "%");
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-
-                    // Vérifie le cache d'abord
-                    Restaurant restaurant = identityMap.get(id);
-                    if (restaurant == null) {
-                        City city = this.cityMapper.findById(rs.getInt("fk_vill"));
-                        RestaurantType type = this.typeMapper.findById(rs.getInt("fk_type"));
-                        Localisation address = new Localisation(rs.getString("adresse"), city);
-
-                        restaurant = new Restaurant(
-                                id,
-                                rs.getString("nom"),
-                                rs.getString("description"),
-                                rs.getString("site_web"),
-                                address,
-                                type
-                        );
-
-                        identityMap.put(id, restaurant);
-                    }
-
-                    restaurants.add(restaurant);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur findByName Restaurant: {}", e.getMessage());
-            throw e;
-        }
-
-        return restaurants;
+    public List<Restaurant> findByName(String name) {
+        EntityManager em = getEntityManager();
+        //Retour d'une liste de restaurant avec le nom en paramètre
+        return  em.createNamedQuery("Restaurant.findByName", Restaurant.class)
+                .setParameter("name", "%" + name + "%")
+                .getResultList();
     }
+
+
 }
 

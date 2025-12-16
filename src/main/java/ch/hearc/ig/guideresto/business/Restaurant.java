@@ -12,6 +12,10 @@ import java.util.Set;
  */
 
  @Entity
+ @NamedQuery(
+         name = "Restaurant.findByName",
+         query = "SELECT r FROM Restaurant r WHERE r.name LIKE :name"
+ )
  @Table(name = "RESTAURANTS")
 public class Restaurant implements IBusinessObject {
     @Id
