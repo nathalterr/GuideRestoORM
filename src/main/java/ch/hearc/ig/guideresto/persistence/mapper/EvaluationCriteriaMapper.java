@@ -77,6 +77,15 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         return null;
     }
 
+    public List<EvaluationCriteria> findByName(String name) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("EvaluationCriteria.findByName", EvaluationCriteria.class)
+                .setParameter("name", "%" + name + "%")
+                .getResultList();
+    }
+
+
+
     @Override
     public List<EvaluationCriteria> findAll() {
         List<EvaluationCriteria> criteres = new ArrayList<>();
