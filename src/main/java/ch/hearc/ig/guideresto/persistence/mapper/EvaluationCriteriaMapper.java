@@ -47,6 +47,15 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         return null;
     }
 
+    public List<EvaluationCriteria> findByName(String name) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("EvaluationCriteria.findByName", EvaluationCriteria.class)
+                .setParameter("name", "%" + name + "%")
+                .getResultList();
+    }
+
+
+
     @Override
     public Set<EvaluationCriteria> findAll() {
         Set<EvaluationCriteria> criteres = new LinkedHashSet<>();

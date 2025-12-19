@@ -67,6 +67,7 @@ public class CityMapper extends AbstractMapper<City> {
                 .setParameter("cityName", "%" + cityName + "%")
                 .getResultList();
     }
+
     @Override
 
     public Set<City> findAll() {
