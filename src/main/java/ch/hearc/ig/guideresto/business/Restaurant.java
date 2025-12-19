@@ -12,6 +12,10 @@ import java.util.Set;
  */
 
  @Entity
+ @NamedQuery(
+         name = "Restaurant.findByName",
+         query = "SELECT r FROM Restaurant r WHERE r.name LIKE :name"
+ )
  @Table(name = "RESTAURANTS")
 public class Restaurant implements IBusinessObject {
     @Id
@@ -24,10 +28,10 @@ public class Restaurant implements IBusinessObject {
     private String description;
     @Column(name="SITE_WEB", nullable=false)
     private String website;
-    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CompleteEvaluation> completeEvaluations;
 
-    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BasicEvaluation> basicEvaluations;
     @Transient
     private Set<Evaluation> evaluations; // Il va falloir la remplir par la somme des deux autres listes, mais c'est pas grave

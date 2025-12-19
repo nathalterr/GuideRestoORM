@@ -4,6 +4,7 @@ import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,12 +12,56 @@ import java.sql.*;
 import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class CityMapper extends AbstractMapper<City> {
 
     private static final Logger logger = LoggerFactory.getLogger(CityMapper.class);
     private final Connection connection;
     private final Map<Integer, City> identityMap = new HashMap<>();
+
+    private static final String SQL_FIND_BY_ID = """
+        SELECT numero, code_postal, nom_ville
+        FROM VILLES
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_ALL = """
+        SELECT numero, code_postal, nom_ville
+        FROM VILLES
+        """;
+
+    private static final String SQL_CREATE = """
+        BEGIN
+            INSERT INTO VILLES (code_postal, nom_ville)
+            VALUES (?, ?)
+            RETURNING numero INTO ?;
+        END;
+        """;
+
+    private static final String SQL_UPDATE = """
+        UPDATE VILLES
+        SET code_postal = ?, nom_ville = ?
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_BY_NAME = """
+        SELECT numero, code_postal, nom_ville
+        FROM VILLES
+        WHERE nom_ville = ?
+        """;
+
+    private static final String SQL_FIND_BY_ZIP_CODE = """
+        SELECT numero, code_postal, nom_ville
+        FROM VILLES
+        WHERE code_postal = ?
+        """;
+
+    private static final String SQL_EXISTS_BY_NAME = """
+        SELECT 1
+        FROM VILLES
+        WHERE nom_ville = ?
+        """;
 
     public CityMapper() {
         this.connection = getConnection();
@@ -29,9 +74,7 @@ public class CityMapper extends AbstractMapper<City> {
             return identityMap.get(id);
         }
 
-        String sql = "SELECT numero, code_postal, nom_ville FROM VILLES WHERE numero = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
             stmt.setInt(1, id);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -53,27 +96,10 @@ public class CityMapper extends AbstractMapper<City> {
         return null;
     }
 
-
-    public List<City> findByZipCode(String zipCode) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("City.findByZipCode", City.class)
-                .setParameter("zipCode" + "%" + zipCode + "%")
-                .getResultList();
-    }
-
-    public List<City> findByCityName(String cityName) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("City.findByCityName", City.class)
-                .setParameter("cityName", "%" + cityName + "%")
-                .getResultList();
-    }
-
     @Override
-
-    public Set<City> findAll() {
+    public List<Restaurant> findAll() {
         Set<City> cities = new HashSet<>();
-        String sql = "SELECT numero, code_postal, nom_ville FROM VILLES";
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 Integer id = rs.getInt("numero");
@@ -96,10 +122,8 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public City create(City city) {
-        String sql = "BEGIN INSERT INTO VILLES (code_postal, nom_ville) " +
-                "VALUES (?, ?) RETURNING numero INTO ?; END;";
 
-        try (CallableStatement stmt = connection.prepareCall(sql)) {
+        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
             stmt.setString(1, city.getZipCode());
             stmt.setString(2, city.getCityName());
             stmt.registerOutParameter(3, Types.INTEGER);
@@ -131,12 +155,11 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public boolean update(City city) {
-        String sql = "UPDATE VILLES SET code_postal = ?, nom_ville = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setString(1, city.getZipCode());
             stmt.setString(2, city.getCityName());
             stmt.setInt(3, city.getId());
-            Integer updated = stmt.executeUpdate();
+            int updated = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
             if (updated > 0) identityMap.put(city.getId(), city);
             return updated > 0;
@@ -153,15 +176,27 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public boolean deleteById(Integer id) {
-        String sql = "DELETE FROM VILLES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            Integer deleted = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-            if (deleted > 0) identityMap.remove(id);
-            return deleted > 0;
-        } catch (SQLException e) {
-            logger.error("deleteById SQLException: {}", e.getMessage());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            City entity = em.find(City.class, id);
+            if (entity == null) {
+                tx.commit();
+                return false;
+            }
+
+            em.remove(entity);
+            tx.commit();
+            return true;
+
+        } catch (Exception ex) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("City - Exception in deleteById", ex);
             return false;
         }
     }
@@ -189,9 +224,7 @@ public class CityMapper extends AbstractMapper<City> {
             }
         }
 
-        String sql = "SELECT numero, code_postal, nom_ville FROM VILLES WHERE nom_ville = ?";
-
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
             stmt.setString(1, name);
 
             try (ResultSet rs = stmt.executeQuery()) {
@@ -220,8 +253,7 @@ public class CityMapper extends AbstractMapper<City> {
     }
 
     public City findByZipCode(String zipCode) throws SQLException {
-        String sql = "SELECT numero, code_postal, nom_ville FROM VILLES WHERE code_postal = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ZIP_CODE)) {
             stmt.setString(1, zipCode);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -241,8 +273,7 @@ public class CityMapper extends AbstractMapper<City> {
     }
 
     public boolean existsByName(String name) throws SQLException {
-        String sql = "SELECT 1 FROM VILLES WHERE nom_ville = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_EXISTS_BY_NAME)) {
             stmt.setString(1, name);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();

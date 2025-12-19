@@ -3,12 +3,17 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.EvaluationCriteria;
 import ch.hearc.ig.guideresto.business.Grade;
+import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.EntityTransaction;
 
 import java.sql.*;
 import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class GradeMapper extends AbstractMapper<Grade> {
 
@@ -16,6 +21,43 @@ public class GradeMapper extends AbstractMapper<Grade> {
     private final Connection connection;
     private final EvaluationCriteriaMapper criteriaMapper;
     private final CompleteEvaluationMapper evaluationMapper;
+
+    private static final String SQL_FIND_BY_ID = """
+        SELECT numero, note, fk_comm, fk_crit
+        FROM NOTES
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_ALL = """
+        SELECT numero, note, fk_comm, fk_crit
+        FROM NOTES
+        """;
+
+    private static final String SQL_CREATE = """
+        BEGIN
+            INSERT INTO NOTES (note, fk_comm, fk_crit)
+            VALUES (?, ?, ?)
+            RETURNING numero INTO ?;
+        END;
+        """;
+
+    private static final String SQL_UPDATE = """
+        UPDATE NOTES
+        SET note = ?, fk_comm = ?, fk_crit = ?
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_BY_COMPLETE_EVALUATION = """
+        SELECT numero, note, fk_comm, fk_crit
+        FROM NOTES
+        WHERE fk_comm = ?
+        """;
+
+    private static final String SQL_FIND_BY_EVALUATION = """
+        SELECT numero, note, fk_crit
+        FROM NOTES
+        WHERE fk_comm = ?
+        """;
 
     public GradeMapper() {
         this.connection = getConnection();
@@ -31,8 +73,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
             return identityMap.get(id);
         }
 
-        String sql = "SELECT numero, note, fk_comm, fk_crit FROM NOTES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -57,11 +98,10 @@ public class GradeMapper extends AbstractMapper<Grade> {
     }
 
     @Override
-    public Set<Grade> findAll() {
+    public List<Restaurant> findAll() {
         Set<Grade> grades = new HashSet<>();
-        String sql = "SELECT numero, note, fk_comm, fk_crit FROM NOTES";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
@@ -84,8 +124,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public Grade create(Grade grade) {
-        String sql = "BEGIN INSERT INTO NOTES (note, fk_comm, fk_crit) VALUES (?, ?, ?) RETURNING numero INTO ?; END;";
-        try (CallableStatement stmt = connection.prepareCall(sql)) {
+        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
             stmt.setInt(1, grade.getGrade());
             stmt.setInt(2, grade.getEvaluation().getId());
             stmt.setInt(3, grade.getCriteria().getId());
@@ -111,14 +150,13 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public boolean update(Grade grade) {
-        String sql = "UPDATE NOTES SET note = ?, fk_comm = ?, fk_crit = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setInt(1, grade.getGrade());
             stmt.setInt(2, grade.getEvaluation().getId());
             stmt.setInt(3, grade.getCriteria().getId());
             stmt.setInt(4, grade.getId());
 
-            Integer updated = stmt.executeUpdate();
+            int updated = stmt.executeUpdate();
             if (!connection.getAutoCommit()) connection.commit();
 
             // ✅ Synchroniser le cache
@@ -140,25 +178,29 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public boolean deleteById(Integer id) {
-        String sql = "DELETE FROM NOTES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            Integer deleted = stmt.executeUpdate();
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            if (!connection.getAutoCommit()) connection.commit();
+        try {
+            tx.begin();
 
-            // ✅ Retirer du cache
-            if (deleted > 0) identityMap.remove(id);
+            Grade ref = em.getReference(Grade.class, id);
+            em.remove(ref);
 
-            return deleted > 0;
-        } catch (SQLException ex) {
-            System.err.println("Erreur deleteById Grade : " + ex.getMessage());
-            try { connection.rollback(); } catch (SQLException e) {
-                System.err.println("Rollback échoué : " + e.getMessage());
-            }
+            tx.commit();
+            return true;
+
+        } catch (EntityNotFoundException e) {
+            if (tx.isActive()) tx.rollback();
+            return false;
+
+        } catch (Exception ex) {
+            if (tx.isActive()) tx.rollback();
+            logger.error("Exception in deleteById", ex);
             return false;
         }
     }
+
 
     @Override
     protected String getSequenceQuery() {
@@ -178,9 +220,8 @@ public class GradeMapper extends AbstractMapper<Grade> {
     // 🔹 Utilitaires avec cache aussi
     public Set<Grade> findByCompleteEvaluation(CompleteEvaluation eval) {
         Set<Grade> grades = new HashSet<>();
-        String sql = "SELECT numero, note, fk_comm, fk_crit FROM NOTES WHERE fk_comm = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_COMPLETE_EVALUATION)) {
             stmt.setInt(1, eval.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -202,9 +243,8 @@ public class GradeMapper extends AbstractMapper<Grade> {
     }
     public Set<Grade> findByEvaluation(CompleteEvaluation eval) {
         Set<Grade> grades = new LinkedHashSet<>();
-        String sql = "SELECT numero, note, fk_crit FROM NOTES WHERE fk_comm = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_EVALUATION)) {
             stmt.setInt(1, eval.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 EvaluationCriteriaMapper critMapper = new EvaluationCriteriaMapper();

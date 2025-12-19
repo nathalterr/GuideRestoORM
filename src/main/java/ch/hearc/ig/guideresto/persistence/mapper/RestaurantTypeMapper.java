@@ -1,7 +1,10 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
+import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -9,18 +12,62 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     private static final Logger logger = LoggerFactory.getLogger(RestaurantTypeMapper.class);
     private final Connection connection;
     private final Map<Integer, RestaurantType> identityMap = new HashMap<>();
+
+    private static final String SQL_FIND_BY_ID = """
+    SELECT numero, libelle, description
+    FROM TYPES_GASTRONOMIQUES
+    WHERE numero = ?
+   """;
+
+    private static final String SQL_FIND_BY_LABEL = """
+    SELECT numero, libelle, description
+    FROM TYPES_GASTRONOMIQUES
+    WHERE libelle = ?
+   """;
+
+    private static final String SQL_FIND_BY_DESCRIPTION = """
+    SELECT numero, libelle, description
+    FROM TYPES_GASTRONOMIQUES
+    WHERE libelle = ?
+   """;
+
+    private static final String SQL_FIND_ALL = """
+    SELECT numero, libelle, description
+    FROM TYPES_GASTRONOMIQUES
+   """;
+
+    private static final String SQL_UPDATE = """
+    UPDATE TYPES_GASTRONOMIQUES SET libelle = ?, description = ? WHERE numero = ?
+    """;
+
+    private static final String SQL_EXISTS_BY_NAME = """
+    SELECT 1 FROM TYPES_GASTRONOMIQUES
+    WHERE libelle = ?
+    """;
+    private static final String SQL_FIND_BY_NAME= """
+    SELECT numero, libelle, description FROM TYPES_GASTRONOMIQUES
+    WHERE libelle = ?
+    """;
+
+    private static final String SQL_CREATE_GENERATE_ID= """
+    SELECT SEQ_TYPES_GASTRONOMIQUES.NEXTVAL FROM dual
+    """;
+
+    private static final String SQL_CREATE_INSERT = """
+    INSERT INTO TYPES_GASTRONOMIQUES (numero, libelle, description)
+    VALUES (?, ?, ?)
+    """;
+
 
     public RestaurantTypeMapper() {
         this.connection = getConnection();
@@ -34,8 +81,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             return identityMap.get(id);
         }
 
-        String sql = "SELECT numero, libelle, description FROM TYPES_GASTRONOMIQUES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -57,8 +103,8 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     public RestaurantType findByLabel(String label) {
-        String sql = "SELECT numero, libelle, description FROM TYPES_GASTRONOMIQUES WHERE libelle = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_LABEL)) {
             stmt.setString(1, label);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -86,12 +132,40 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return null;
     }
 
-    @Override
-    public Set<RestaurantType> findAll() {
-        Set<RestaurantType> types = new HashSet<>();
-        String sql = "SELECT numero, libelle, description FROM TYPES_GASTRONOMIQUES";
+    public RestaurantType findByDescription(String description) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_DESCRIPTION)) {
+            stmt.setString(1, description);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Integer id = rs.getInt("numero");
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
+                    // 🔹 Vérifie le cache avant de créer un nouvel objet
+                    if (identityMap.containsKey(id)) {
+
+                        return identityMap.get(id);
+                    }
+
+                    RestaurantType type = new RestaurantType(
+                            id,
+                            rs.getString("libelle"),
+                            rs.getString("description")
+                    );
+
+                    identityMap.put(id, type);
+                    return type;
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error("findByLabel SQLException: {}", ex.getMessage());
+        }
+        return null;
+    }
+
+    @Override
+    public List<RestaurantType> findAll() {
+        List<RestaurantType> types = new ArrayList<>();
+
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 Integer id = rs.getInt("numero");
@@ -124,10 +198,8 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             }
 
             // 🔹 Génération de l'ID via la séquence
-            Integer id;
-            try (PreparedStatement seqStmt = connection.prepareStatement(
-                    "SELECT SEQ_TYPES_GASTRONOMIQUES.NEXTVAL FROM dual"
-            )) {
+            int id;
+            try (PreparedStatement seqStmt = connection.prepareStatement(SQL_CREATE_GENERATE_ID)) {
                 try (ResultSet rs = seqStmt.executeQuery()) {
                     if (!rs.next()) throw new SQLException("Impossible de récupérer NEXTVAL pour SEQ_TYPES_GASTRONOMIQUES");
                     id = rs.getInt(1);
@@ -136,8 +208,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             type.setId(id);
 
             // 🔹 Insert dans la table
-            String sql = "INSERT INTO TYPES_GASTRONOMIQUES (numero, libelle, description) VALUES (?, ?, ?)";
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            try (PreparedStatement stmt = connection.prepareStatement(SQL_CREATE_INSERT)) {
                 stmt.setInt(1, type.getId());
                 stmt.setString(2, type.getLabel());
                 stmt.setString(3, type.getDescription());
@@ -165,12 +236,11 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     @Override
     public boolean update(RestaurantType object) {
-        String sql = "UPDATE TYPES_GASTRONOMIQUES SET libelle = ?, description = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+                try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setString(1, object.getLabel());
             stmt.setString(2, object.getDescription());
             stmt.setInt(3, object.getId());
-            Integer affected = stmt.executeUpdate();
+            int affected = stmt.executeUpdate();
 
             if (affected > 0) {
                 identityMap.put(object.getId(), object); // 🔹 Mise à jour du cache
@@ -185,25 +255,33 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     @Override
-    public boolean delete(RestaurantType object) {
-        return deleteById(object.getId());
+    public boolean delete(RestaurantType typeResto) {
+        return deleteById(typeResto.getId());
     }
 
     @Override
     public boolean deleteById(Integer id) {
-        String sql = "DELETE FROM TYPES_GASTRONOMIQUES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-            stmt.setInt(1, id);
-            Integer affected = stmt.executeUpdate();
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            if (affected > 0) {
-                identityMap.remove(id); // 🔹 Supprimer du cache
+        try {
+            tx.begin();
+
+            RestaurantType entity = em.find(RestaurantType.class, id);
+            if (entity == null) {
+                tx.commit();
+                return false;
             }
 
-            if (!connection.getAutoCommit()) connection.commit();
-            return affected > 0;
-        } catch (SQLException ex) {
-            logger.error("deleteById SQLException: {}", ex.getMessage());
+            em.remove(entity);
+            tx.commit();
+            return true;
+
+        } catch (Exception ex) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("RestaurantType - Exception in deleteById", ex);
             return false;
         }
     }
@@ -224,8 +302,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     public RestaurantType findByName(String name) throws SQLException {
-        String sql = "SELECT numero, libelle, description FROM TYPES_GASTRONOMIQUES WHERE libelle = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
             stmt.setString(1, name);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -253,8 +330,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     }
 
     public boolean existsByName(String name) throws SQLException {
-        String sql = "SELECT 1 FROM TYPES_GASTRONOMIQUES WHERE libelle = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_EXISTS_BY_NAME)) {
             stmt.setString(1, name);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();

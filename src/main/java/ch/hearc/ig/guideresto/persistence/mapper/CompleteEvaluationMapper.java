@@ -1,15 +1,16 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
-import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
 
 import java.sql.*;
 import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation> {
 
@@ -17,6 +18,43 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     private final Connection connection;
     private RestaurantMapper restaurantMapper;
     private GradeMapper gradeMapper;
+
+    private static final String SQL_FIND_BY_ID = """
+        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
+        FROM COMMENTAIRES
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_ALL = """
+        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
+        FROM COMMENTAIRES
+        """;
+
+    private static final String SQL_CREATE = """
+        BEGIN
+            INSERT INTO COMMENTAIRES (date_eval, commentaire, nom_utilisateur, fk_rest)
+            VALUES (?, ?, ?, ?)
+            RETURNING numero INTO ?;
+        END;
+        """;
+
+    private static final String SQL_UPDATE = """
+        UPDATE COMMENTAIRES
+        SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest = ?
+        WHERE numero = ?
+        """;
+
+    private static final String SQL_FIND_BY_RESTAURANT = """
+        SELECT numero, date_eval, commentaire, nom_utilisateur
+        FROM COMMENTAIRES
+        WHERE fk_rest = ?
+        """;
+
+    private static final String SQL_FIND_BY_USER_AND_RESTAURANT = """
+        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
+        FROM COMMENTAIRES
+        WHERE nom_utilisateur = ? AND fk_rest = ?
+        """;
 
     public CompleteEvaluationMapper() {
         this.connection = getConnection();
@@ -47,8 +85,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             return identityMap.get(id);
         }
 
-        String sql = "SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest FROM COMMENTAIRES WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
             stmt.setInt(1, id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -76,26 +113,11 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return null;
     }
 
-    public List<CompleteEvaluation> findByComment(String comment) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("CompleteEvaluation.findByComment", CompleteEvaluation.class)
-                .setParameter("comment", "%" + comment + "%")
-                .getResultList();
-    }
-
-    public List<CompleteEvaluation> findByUsername(String username) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("CompleteEvaluation.findByUsername", CompleteEvaluation.class)
-                .setParameter("username", "%" + username + "%")
-                .getResultList();
-    }
-
     @Override
-    public Set<CompleteEvaluation> findAll() {
+    public List<Restaurant> findAll() {
         Set<CompleteEvaluation> evaluations = new LinkedHashSet<>();
-        String sql = "SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest FROM COMMENTAIRES";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql);
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 Integer id = rs.getInt("numero");
@@ -128,9 +150,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public CompleteEvaluation create(CompleteEvaluation evaluation) {
-        String sql = "BEGIN INSERT INTO COMMENTAIRES (date_eval, commentaire, nom_utilisateur, fk_rest) " +
-                "VALUES (?, ?, ?, ?) RETURNING numero INTO ?; END;";
-        try (CallableStatement stmt = connection.prepareCall(sql)) {
+        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
 
             stmt.setDate(1, new java.sql.Date(evaluation.getVisitDate().getTime()));
             stmt.setString(2, evaluation.getComment());
@@ -173,15 +193,14 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public boolean update(CompleteEvaluation evaluation) {
-        String sql = "UPDATE COMMENTAIRES SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest = ? WHERE numero = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setDate(1, new java.sql.Date(evaluation.getVisitDate().getTime()));
             stmt.setString(2, evaluation.getComment());
             stmt.setString(3, evaluation.getUsername());
             stmt.setInt(4, evaluation.getRestaurant().getId());
             stmt.setInt(5, evaluation.getId());
 
-            Integer rows = stmt.executeUpdate();
+            int rows = stmt.executeUpdate();
 
             if (!connection.getAutoCommit()) connection.commit();
 
@@ -204,36 +223,28 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public boolean deleteById(Integer id) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
         try {
-            // Supprimer d'abord les notes liées
-            String deleteNotesSql = "DELETE FROM NOTES WHERE fk_comm = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(deleteNotesSql)) {
-                stmt.setInt(1, id);
-                stmt.executeUpdate();
+            tx.begin();
+
+            CompleteEvaluation evaluation =
+                    em.find(CompleteEvaluation.class, id);
+
+            if (evaluation == null) {
+                tx.commit();
+                return false;
             }
 
-            // Supprimer le commentaire
-            String deleteCommentSql = "DELETE FROM COMMENTAIRES WHERE numero = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(deleteCommentSql)) {
-                stmt.setInt(1, id);
-                Integer deleted = stmt.executeUpdate();
+            em.remove(evaluation);
 
-                if (!connection.getAutoCommit()) connection.commit();
+            tx.commit();
+            return true;
 
-                if (deleted > 0) {
-                    identityMap.remove(id);
-                }
-
-                return deleted > 0;
-            }
-
-        } catch (SQLException ex) {
-            logger.error("Erreur deleteById CompleteEvaluation: {}", ex.getMessage());
-            try {
-                if (!connection.getAutoCommit()) connection.rollback();
-            } catch (SQLException rollbackEx) {
-                logger.error("Rollback échoué : {}", rollbackEx.getMessage());
-            }
+        } catch (Exception ex) {
+            if (tx.isActive()) tx.rollback();
+            logger.error("CompleteEvaluation - Erreur deleteById", ex);
             return false;
         }
     }
@@ -255,9 +266,8 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     public Set<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
         Set<CompleteEvaluation> evaluations = new LinkedHashSet<>();
-        String sql = "SELECT numero, date_eval, commentaire, nom_utilisateur FROM COMMENTAIRES WHERE fk_rest = ?";
 
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_RESTAURANT)) {
             stmt.setInt(1, restaurant.getId());
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
@@ -293,15 +303,13 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         for (CompleteEvaluation eval : identityMap.values()) {
             if (eval.getUsername().equalsIgnoreCase(username)
                     && eval.getRestaurant() != null
-                    && eval.getRestaurant().getId() == restaurantId) {
+                    && Objects.equals(eval.getRestaurant().getId(), restaurantId)) {
                 System.out.println("⚡ Évaluation trouvée dans le cache pour " + username);
                 return eval;
             }
         }
 
-        String sql = "SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest " +
-                "FROM COMMENTAIRES WHERE nom_utilisateur = ? AND fk_rest = ?";
-        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_USER_AND_RESTAURANT)) {
             stmt.setString(1, username);
             stmt.setInt(2, restaurantId);
             try (ResultSet rs = stmt.executeQuery()) {

@@ -14,12 +14,18 @@ import java.util.Set;
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {
 
+
+    @Column(name="numero")
+    private Integer id;
     @Column(name="COMMENTAIRE")
     private String comment;
     @Column(name="NOM_UTILISATEUR")
     private String username;
-    @OneToMany(mappedBy = "evaluation", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "evaluation", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<Grade> grades;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fk_rest", nullable = false)
+    private Restaurant restaurant;
 
     public CompleteEvaluation() {
         this(null, null, null, null);

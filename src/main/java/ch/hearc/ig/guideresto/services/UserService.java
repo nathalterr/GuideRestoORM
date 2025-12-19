@@ -8,6 +8,7 @@ import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,20 +66,20 @@ public class UserService {
     public RestaurantType findByLabel(String label) {
         return typeMapper.findByLabel(label);
     }
-    public Set<Restaurant> getAllRestaurants() {
+    public List<Restaurant> getAllRestaurants() {
         return restaurantMapper.findAll();
     }
 
-    public Set<Restaurant> findRestaurantsByName(String name) throws SQLException{
+    public List<Restaurant> findRestaurantsByName(String name) throws SQLException{
         return restaurantMapper.findByName(name);
     }
 
-    public Set<Restaurant> findRestaurantsByCity(String cityPart) { if (cityPart == null || cityPart.isEmpty()) return Set.of(); Set<Restaurant> all = restaurantMapper.findAll(); all.removeIf(r -> !r.getAddress().getCity().getCityName().toLowerCase() .contains(cityPart.toLowerCase())); return all; }
+    public List<Restaurant> findRestaurantsByCity(String cityPart) { if (cityPart == null || cityPart.isEmpty()) return Set.of(); Set<Restaurant> all = restaurantMapper.findAll(); all.removeIf(r -> !r.getAddress().getCity().getCityName().toLowerCase() .contains(cityPart.toLowerCase())); return all; }
 
     public Set<Restaurant> findRestaurantsByType(String typeLabel) {
         RestaurantType type = typeMapper.findByLabel(typeLabel);
         if (type == null) return Set.of();
-        Set<Restaurant> all = restaurantMapper.findAll();
+        List<Restaurant> all = restaurantMapper.findAll();
         all.removeIf(r -> !r.getType().getId().equals(type.getId()));
         return all;
     }
