@@ -2,6 +2,7 @@ package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
+import ch.hearc.ig.guideresto.services.RestaurantService;
 import ch.hearc.ig.guideresto.services.UserService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -17,6 +18,7 @@ public class Application {
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
     private static final UserService userService = new UserService();
+    private static RestaurantService restoServ = new RestaurantService();
 
     public static void main(String[] args) {
 
@@ -60,7 +62,7 @@ public class Application {
                 showRestaurantsList();
                 break;
             case 2:
-                searchRestaurantByName(restaurants, choice);
+                searchRestaurantByName();
                 break;
             case 3:
                 searchRestaurantByCity();
@@ -87,24 +89,42 @@ public class Application {
      * @return L'instance du restaurant choisi par l'utilisateur
      */
     private static Restaurant pickRestaurant(List<Restaurant> restaurants) {
-        if (restaurants.isEmpty()) { // Si la liste est vide, on s'arrête là
-            System.out.println("Aucun restaurant n'a été trouvé !");
+
+        System.out.println("Plusieurs restaurants trouvés :");
+
+        for (int i = 0; i < restaurants.size(); i++) {
+            Restaurant r = restaurants.get(i);
+            System.out.println(
+                    (i + 1) + ") \"" + r.getName() + "\" - " +
+                            r.getAddress().getStreet() + " - " +
+                            r.getAddress().getCity().getZipCode() + " " +
+                            r.getAddress().getCity().getCityName()
+            );
+        }
+
+        System.out.println("Entrez le numéro du restaurant (ou Enter pour annuler) :");
+        String input = readString();
+
+        if (input.isBlank()) {
             return null;
         }
 
-        String result;
-        for (Restaurant currentRest : restaurants) {
-            result = "";
-            result = "\"" + result + currentRest.getName() + "\" - " + currentRest.getAddress().getStreet() + " - ";
-            result = result + currentRest.getAddress().getCity().getZipCode() + " " + currentRest.getAddress().getCity().getCityName();
-            System.out.println(result);
+        try {
+            int index = Integer.parseInt(input);
+
+            if (index < 1 || index > restaurants.size()) {
+                System.out.println("Numéro invalide.");
+                return null;
+            }
+
+            return restaurants.get(index - 1);
+
+        } catch (NumberFormatException e) {
+            System.out.println("Veuillez entrer un numéro valide.");
+            return null;
         }
-
-        System.out.println("Veuillez saisir le nom exact du restaurant dont vous voulez voir le détail, ou appuyez sur Enter pour revenir en arrière");
-        String choice = readString();
-
-        return searchRestaurantByName(restaurants, choice);
     }
+
 
     /**
      * Affiche la liste de tous les restaurants, sans filtre
@@ -124,23 +144,25 @@ public class Application {
     /**
      * Affiche une liste de restaurants dont le nom contient une chaîne de caractères saisie par l'utilisateur
      */
-    private static void searchRestaurantByName(List<Restaurant> restaurants, String choice) {
+    private static void searchRestaurantByName() {
         System.out.println("Veuillez entrer une partie du nom recherché : ");
         String research = readString();
+        List<Restaurant> restaurants ;
 
         try {
-            // ⚡ On passe par le service, plus par le mapper
-            restaurants = userService.findRestaurantsByName(research);
-
+            // ⚡ On passes par le service, plus par le mapper
+            restaurants = restoServ.findRestaurantsByName(research);
             if (restaurants.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé pour : " + research);
-                return;
             }
-
-            // L'utilisateur choisit un restaurant parmi les résultats
+            else if (restaurants.size() == 1) {
+                showRestaurant(restaurants.get(0));
+            }
+            else{// L'utilisateur choisit un restaurant parmi les résultats.
             Restaurant restaurant = pickRestaurant(restaurants);
             if (restaurant != null) {
                 showRestaurant(restaurant);
+                }
             }
         } catch (Exception e) {
             System.err.println("Erreur lors de la recherche des restaurants : " + e.getMessage());
@@ -179,7 +201,7 @@ public class Application {
      * @param cities La liste des villes à présnter à l'utilisateur
      * @return La ville sélectionnée, ou null si aucune ville n'a été choisie.
      */
-    private static City pickCity(Set<City> cities) {
+    private static City pickCity(List<City> cities) {
         System.out.println("Villes disponibles :");
         for (City c : cities) {
             System.out.println(c.getZipCode() + " " + c.getCityName());
@@ -211,7 +233,7 @@ public class Application {
      * @param types La liste des types de restaurant à présnter à l'utilisateur
      * @return Le type sélectionné, ou null si aucun type n'a été choisi.
      */
-    private static RestaurantType pickRestaurantType(Set<RestaurantType> types) {
+    private static RestaurantType pickRestaurantType(List<RestaurantType> types) {
         System.out.println("Voici la liste des types possibles, veuillez entrer le libellé exact du type désiré : ");
         for (RestaurantType currentType : types) {
             System.out.println("\"" + currentType.getLabel() + "\" : " + currentType.getDescription());
@@ -229,12 +251,12 @@ public class Application {
         try {
             // Récupère tous les types via le service si tu en as un,
             // sinon tu peux passer par un Set déjà connu
-            Set<RestaurantType> types = userService.getAllTypes(); // si tu as un service pour les types
+            List<RestaurantType> types = userService.getAllTypes(); // si tu as un service pour les types
             RestaurantType chosenType = pickRestaurantType(types);
             if (chosenType == null) return;
 
             // ⚡ Utilisation du service pour filtrer par type
-            Set<Restaurant> filtered = userService.findRestaurantsByType(chosenType.getLabel());
+            List<Restaurant> filtered = userService.findRestaurantsByType(chosenType.getLabel());
 
             if (filtered.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé pour le type : " + chosenType.getLabel());
@@ -569,24 +591,6 @@ public class Application {
         }
     }
 
-
-    /**
-     * Recherche dans le Set le restaurant comportant le nom passé en paramètre.
-     * Retourne null si le restaurant n'est pas trouvé.
-     *
-     * @param restaurants Set de restaurants
-     * @param name        Nom du restaurant à rechercher
-     * @return L'instance du restaurant ou null si pas trouvé
-     */
-    private static Restaurant searchRestaurantByName(Set<Restaurant> restaurants, String name) {
-        for (Restaurant current : restaurants) {
-            if (current.getName().equalsIgnoreCase(name)) {
-                return current;
-            }
-        }
-        return null;
-    }
-
     /**
      * Recherche dans le Set la ville comportant le code NPA passé en paramètre.
      * Retourne null si la ville n'est pas trouvée
@@ -612,7 +616,7 @@ public class Application {
      * @param label Libellé du type recherché
      * @return L'instance RestaurantType ou null si pas trouvé
      */
-    private static RestaurantType searchTypeByLabel(Set<RestaurantType> types, String label) {
+    private static RestaurantType searchTypeByLabel(List<RestaurantType> types, String label) {
         for (RestaurantType current : types) {
             if (current.getLabel().equalsIgnoreCase(label)) {
                 return current;

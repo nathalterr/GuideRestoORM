@@ -11,31 +11,36 @@ import java.util.List;
 import java.util.Set;
 
 public class RestaurantService {
-    private final RestaurantMapper restaurantMapper;
+    private final RestaurantMapper restaurantMapper = new RestaurantMapper();
 
-    public RestaurantService(RestaurantMapper restaurantMapper) {
-        this.restaurantMapper = restaurantMapper;
+    public RestaurantService() {
     }
 
-    public Set<Restaurant> getAllRestaurants() {
+    public List<Restaurant> getAllRestaurants() {
         return restaurantMapper.findAll();
     }
 
     public List<Restaurant> findRestaurantsByName(String name) throws SQLException {
         return restaurantMapper.findByName(name);
     }
+    public List<Restaurant> findRestaurantsByName(List<Restaurant> restaurants, String name) throws SQLException {
+        for (Restaurant r : restaurants) {
+            if (r.getName().equalsIgnoreCase(name)) {
+                return r;
+            }
+        }
+        return null;
+    }
 
-    public Set<Restaurant> findRestaurantsByCity(String cityPart) {
-        if (cityPart == null || cityPart.isEmpty()) return Set.of();
-        Set<Restaurant> all = restaurantMapper.findAll();
+    public List<Restaurant> findRestaurantsByCity(String cityPart) {
+        List<Restaurant> all = restaurantMapper.findAll();
         all.removeIf(r -> !r.getAddress().getCity().getCityName().toLowerCase().contains(cityPart.toLowerCase()));
         return all;
     }
 
-    public Set<Restaurant> findRestaurantsByType(String typeLabel, RestaurantTypeMapper typeMapper) {
+    public List<Restaurant> findRestaurantsByType(String typeLabel, RestaurantTypeMapper typeMapper) {
         RestaurantType type = typeMapper.findByLabel(typeLabel);
-        if (type == null) return Set.of();
-        Set<Restaurant> all = restaurantMapper.findAll();
+        List<Restaurant> all = restaurantMapper.findAll();
         all.removeIf(r -> !r.getType().getId().equals(type.getId()));
         return all;
     }

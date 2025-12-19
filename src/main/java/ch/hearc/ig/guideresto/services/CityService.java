@@ -4,6 +4,7 @@ import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.persistence.mapper.CityMapper;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Set;
 
 public class CityService {
@@ -13,7 +14,7 @@ public class CityService {
         this.cityMapper = cityMapper;
     }
 
-    public Set<City> getAllCities() {
+    public List<City> getAllCities() {
         return cityMapper.findAll();
     }
 

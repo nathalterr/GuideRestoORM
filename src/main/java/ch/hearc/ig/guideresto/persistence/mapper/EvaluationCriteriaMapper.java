@@ -115,44 +115,13 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public EvaluationCriteria create(EvaluationCriteria critere) {
-
-        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
-            stmt.setString(1, critere.getName());
-            stmt.setString(2, critere.getDescription());
-            stmt.registerOutParameter(3, Types.INTEGER);
-
-            stmt.executeUpdate();
-            Integer generatedId = stmt.getInt(3);
-            critere.setId(generatedId);
-
-            // ✅ Ajout dans le cache
-            identityMap.put(generatedId, critere);
-
-            if (!connection.getAutoCommit()) {
-                connection.commit();
-            }
-
-            return critere;
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1) { // Doublon
-                try {
-                    return findByName(critere.getName());
-                } catch (SQLException ex) {
-                    logger.error("Erreur findByName après doublon: {}", ex.getMessage());
-                }
-            } else {
-                logger.error("Erreur create EvaluationCriteria: {}", e.getMessage());
-            }
-
-            try {
-                connection.rollback();
-            } catch (SQLException r) {
-                logger.error("Rollback failed: {}", r.getMessage());
-            }
-
-            return null;
-        }
+        EntityManager em = getEntityManager();
+        em.getTransaction().begin();
+        em.persist(critere);
+        em.getTransaction().commit();
+        return critere;
     }
+
 
     @Override
     public boolean update(EvaluationCriteria critere) {
@@ -222,30 +191,5 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     @Override
     protected String getCountQuery() {
         return "SELECT COUNT(*) FROM CRITERES_EVALUATION";
-    }
-
-    public EvaluationCriteria findByName(String name) throws SQLException {
-        // ✅ Vérifie d’abord dans le cache
-        for (EvaluationCriteria crit : identityMap.values()) {
-            if (crit.getName().equalsIgnoreCase(name)) {
-                System.out.println("⚡ Critère '" + name + "' trouvé dans le cache");
-                return crit;
-            }
-        }
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
-            stmt.setString(1, name);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    EvaluationCriteria crit = new EvaluationCriteria(
-                            rs.getInt("numero"),
-                            rs.getString("nom"),
-                            rs.getString("description")
-                    );
-                    identityMap.put(crit.getId(), crit);
-                    return crit;
-                }
-            }
-        }
-        return null;
     }
 }

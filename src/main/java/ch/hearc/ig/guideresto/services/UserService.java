@@ -7,10 +7,7 @@ import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 
@@ -34,7 +31,7 @@ public class UserService {
         basicEvaluation = mapperFactory.getBasicEvalMapper();
         completeEvaluationMapper = mapperFactory.getCompleteEvalMapper();
     }
-    public Set<City> getAllCities() {
+    public List<City> getAllCities() {
         return cityMapper.findAll();
     }
 
@@ -52,7 +49,7 @@ public class UserService {
         return cityMapper.create(city);
     }
     // Récupère tous les types
-    public Set<RestaurantType> getAllTypes() {
+    public List<RestaurantType> getAllTypes() {
         return typeMapper.findAll();
     }
 
@@ -74,11 +71,15 @@ public class UserService {
         return restaurantMapper.findByName(name);
     }
 
-    public List<Restaurant> findRestaurantsByCity(String cityPart) { if (cityPart == null || cityPart.isEmpty()) return Set.of(); Set<Restaurant> all = restaurantMapper.findAll(); all.removeIf(r -> !r.getAddress().getCity().getCityName().toLowerCase() .contains(cityPart.toLowerCase())); return all; }
+    public List<Restaurant> findRestaurantsByCity(String cityPart) {
+        List<Restaurant> all = new ArrayList<>();
+        if (cityPart == null || cityPart.isEmpty()) return all;
 
-    public Set<Restaurant> findRestaurantsByType(String typeLabel) {
+        all = restaurantMapper.findAll(); all.removeIf(r -> !r.getAddress().getCity().getCityName().toLowerCase() .contains(cityPart.toLowerCase()));
+        return all; }
+
+    public List<Restaurant> findRestaurantsByType(String typeLabel) {
         RestaurantType type = typeMapper.findByLabel(typeLabel);
-        if (type == null) return Set.of();
         List<Restaurant> all = restaurantMapper.findAll();
         all.removeIf(r -> !r.getType().getId().equals(type.getId()));
         return all;
