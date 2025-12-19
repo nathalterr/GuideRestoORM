@@ -111,8 +111,8 @@ public class CityMapper extends AbstractMapper<City> {
     }
 
     @Override
-    public List<Restaurant> findAll() {
-        Set<City> cities = new HashSet<>();
+    public List<City> findAll() {
+        List<City> cities = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {

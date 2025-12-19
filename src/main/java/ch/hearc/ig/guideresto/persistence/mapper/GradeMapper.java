@@ -98,8 +98,8 @@ public class GradeMapper extends AbstractMapper<Grade> {
     }
 
     @Override
-    public List<Restaurant> findAll() {
-        Set<Grade> grades = new HashSet<>();
+    public List<Grade> findAll() {
+        List<Grade> grades = new ArrayList<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {

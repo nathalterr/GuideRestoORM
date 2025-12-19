@@ -107,8 +107,8 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     }
 
     @Override
-    public List<Restaurant> findAll() {
-        Set<BasicEvaluation> evaluations = new HashSet<>();
+    public List<BasicEvaluation> findAll() {
+        List<BasicEvaluation> evaluations = new ArrayList<>();
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL );
              ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
