@@ -16,7 +16,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
     protected static final Logger logger = LogManager.getLogger();
 
     public abstract T findById(Integer id);
-    public abstract List<Restaurant> findAll();
+    public abstract List<T> findAll();
     public abstract T create(T object);
     public abstract boolean update(T object);
     public abstract boolean delete(T object);

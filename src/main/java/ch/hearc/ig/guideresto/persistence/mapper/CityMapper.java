@@ -96,6 +96,20 @@ public class CityMapper extends AbstractMapper<City> {
         return null;
     }
 
+    public List<City> findByZipCode(String zipCode) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("City.findByZipCode", City.class)
+                .setParameter("zipCode" + "%" + zipCode + "%")
+                .getResultList();
+    }
+
+    public List<City> findByCityName(String cityName) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("City.findByCityName", City.class)
+                .setParameter("cityName", "%" + cityName + "%")
+                .getResultList();
+    }
+
     @Override
     public List<Restaurant> findAll() {
         Set<City> cities = new HashSet<>();

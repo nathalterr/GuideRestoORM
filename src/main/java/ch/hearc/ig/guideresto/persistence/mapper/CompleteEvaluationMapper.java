@@ -113,6 +113,20 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return null;
     }
 
+    public List<CompleteEvaluation> findByComment(String comment) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("CompleteEvaluation.findByComment", CompleteEvaluation.class)
+                .setParameter("comment", "%" + comment + "%")
+                .getResultList();
+    }
+
+    public List<CompleteEvaluation> findByUsername(String username) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("CompleteEvaluation.findByUsername", CompleteEvaluation.class)
+                .setParameter("username", "%" + username + "%")
+                .getResultList();
+    }
+
     @Override
     public List<Restaurant> findAll() {
         Set<CompleteEvaluation> evaluations = new LinkedHashSet<>();
