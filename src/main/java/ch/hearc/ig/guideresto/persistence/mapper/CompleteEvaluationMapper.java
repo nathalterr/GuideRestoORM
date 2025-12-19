@@ -1,14 +1,13 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
+import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
 
 import java.sql.*;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 
@@ -75,6 +74,20 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
             logger.error("Erreur lors du findById : {}", e.getMessage());
         }
         return null;
+    }
+
+    public List<CompleteEvaluation> findByComment(String comment) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("CompleteEvaluation.findByComment", CompleteEvaluation.class)
+                .setParameter("comment", "%" + comment + "%")
+                .getResultList();
+    }
+
+    public List<CompleteEvaluation> findByUsername(String username) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("CompleteEvaluation.findByUsername", CompleteEvaluation.class)
+                .setParameter("username", "%" + username + "%")
+                .getResultList();
     }
 
     @Override

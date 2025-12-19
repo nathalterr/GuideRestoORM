@@ -1,15 +1,14 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
 import ch.hearc.ig.guideresto.business.City;
+import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.*;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 
@@ -54,7 +53,22 @@ public class CityMapper extends AbstractMapper<City> {
         return null;
     }
 
+
+    public List<City> findByZipCode(String zipCode) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("City.findByZipCode", City.class)
+                .setParameter("zipCode" + "%" + zipCode + "%")
+                .getResultList();
+    }
+
+    public List<City> findByCityName(String cityName) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("City.findByCityName", City.class)
+                .setParameter("cityName", "%" + cityName + "%")
+                .getResultList();
+    }
     @Override
+
     public Set<City> findAll() {
         Set<City> cities = new HashSet<>();
         String sql = "SELECT numero, code_postal, nom_ville FROM VILLES";

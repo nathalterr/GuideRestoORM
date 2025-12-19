@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,10 +11,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 
@@ -34,7 +32,6 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         if (identityMap.containsKey(id)) {
             return identityMap.get(id);
         }
-
         String sql = "SELECT numero, date_eval, appreciation, adresse_ip, fk_rest FROM LIKES WHERE numero = ?";
         try (PreparedStatement stmt = connection.prepareStatement(sql)) {
             stmt.setInt(1, id);
@@ -56,6 +53,20 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
             logger.error("SQLException in findById: {}", ex.getMessage());
         }
         return null;
+    }
+
+    public List<BasicEvaluation> findByLikeRestaurant(Boolean likeRestaurant) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("BasicEvaluation.findByLikeRestaurant", BasicEvaluation.class)
+                .setParameter("LikeRestaurant", "%" + likeRestaurant + "%")
+                .getResultList();
+    }
+
+    public List<BasicEvaluation> findByIpAddress(String ipAddress) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("BasicEvaluation.findByIpAddress", BasicEvaluation.class)
+                .setParameter("ipAddress", "%" + ipAddress + "%")
+                .getResultList();
     }
 
     @Override
