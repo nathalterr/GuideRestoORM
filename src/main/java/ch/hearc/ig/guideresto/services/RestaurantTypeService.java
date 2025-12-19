@@ -22,7 +22,7 @@ public class RestaurantTypeService {
         return typeMapper.create(type);
     }
 
-    public RestaurantType findByLabel(String label) {
+    public List<RestaurantType> findByLabel(String label) {
         return typeMapper.findByLabel(label);
     }
 }

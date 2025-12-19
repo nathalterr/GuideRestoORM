@@ -59,7 +59,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
         WHERE fk_comm = ?
         """;
 
-    public GradeMapper() {
+    public GradeMapper() throws SQLException {
         this.connection = getConnection();
         this.criteriaMapper = new EvaluationCriteriaMapper();
         this.evaluationMapper = new CompleteEvaluationMapper();

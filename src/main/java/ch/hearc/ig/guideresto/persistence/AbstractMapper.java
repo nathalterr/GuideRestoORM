@@ -30,7 +30,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @param id the ID to check
      * @return true si l'objet existe, false sinon
      */
-    public boolean exists(Integer id) {
+    public boolean exists(Integer id) throws SQLException {
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(getExistsQuery())) {
@@ -49,7 +49,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * Compte le nombre d'objets en base de données.
      * @return
      */
-    public Integer count() {
+    public Integer count() throws SQLException {
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(getCountQuery());
@@ -70,7 +70,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
      * @return Le nombre de villes
      * @En cas d'erreur SQL
      */
-    protected Integer getSequenceValue() {
+    protected Integer getSequenceValue() throws SQLException {
         Connection connection = ConnectionUtils.getConnection();
 
         try (PreparedStatement stmt = connection.prepareStatement(getSequenceQuery());

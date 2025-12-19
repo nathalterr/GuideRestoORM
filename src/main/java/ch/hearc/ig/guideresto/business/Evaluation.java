@@ -11,7 +11,7 @@ import java.util.Date;
 
  @NamedQuery(
          name = "Evaluation.findByVisitDate",
-         query = "SELECT e FROM Evaluation e WHERE e.visitDate LIKE :visitDate"
+         query = "SELECT e FROM Evaluation e WHERE e.visitDate = :visitDate"
  )
 
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)

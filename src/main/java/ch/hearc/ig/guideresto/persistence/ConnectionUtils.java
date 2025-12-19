@@ -1,58 +1,43 @@
 package ch.hearc.ig.guideresto.persistence;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
-/**
- * Provide helper methods to deal with database connections.
- * Ideally, this should also manage connection pools in a bigger application.
- *
- * @author arnaud.geiser
- * @author alain.matile
- */
 public class ConnectionUtils {
 
-    private static final Logger logger = LogManager.getLogger();
+    private static HikariDataSource dataSource;
 
-    private static Connection connection;
-
-    public static Connection getConnection() {
+    static {
         try {
-            // Load database credentials from resources/database.properties
+            // Charger les infos depuis resources/database.properties
             ResourceBundle dbProps = ResourceBundle.getBundle("database");
             String url = dbProps.getString("database.url");
             String username = dbProps.getString("database.username");
             String password = dbProps.getString("database.password");
 
-            logger.info("Trying to connect to user schema '{}' with JDBC string '{}'", username, url);
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl(url);
+            config.setUsername(username);
+            config.setPassword(password);
+            config.setMaximumPoolSize(60); // max 5 connexions simultanées
 
-            // Initialize a connection if required
-            if (ConnectionUtils.connection == null || ConnectionUtils.connection.isClosed()) {
-                Connection connection = DriverManager.getConnection(url, username, password);
-                connection.setAutoCommit(false);
-                ConnectionUtils.connection = connection;
-            }
-        } catch (SQLException ex) {
-            logger.error(ex.getMessage(), ex);
-        } catch (MissingResourceException ex) {
-            logger.error(ex.getMessage(), ex);
+            dataSource = new HikariDataSource(config);
+
+        } catch (MissingResourceException e) {
+            throw new RuntimeException("Impossible de trouver le fichier database.properties", e);
         }
-        return ConnectionUtils.connection;
     }
 
-    public static void closeConnection() {
-        try {
-            if (ConnectionUtils.connection != null && !ConnectionUtils.connection.isClosed()) {
-                ConnectionUtils.connection.close();
-            }
-        } catch (SQLException e) {
-            logger.error(e.getMessage(), e);
-        }
+    public static Connection getConnection() throws SQLException {
+        return dataSource.getConnection(); // récupère une connexion du pool
+    }
+
+    public static void closePool() {
+        if (dataSource != null) dataSource.close();
     }
 }

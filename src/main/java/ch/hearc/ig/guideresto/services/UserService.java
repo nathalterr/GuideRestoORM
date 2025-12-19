@@ -21,7 +21,7 @@ public class UserService {
     private final BasicEvaluationMapper basicEvaluation;
     private final CompleteEvaluationMapper completeEvaluationMapper;
 
-    public UserService() {
+    public UserService() throws SQLException {
         MapperFactory mapperFactory = new MapperFactory();
         cityMapper = mapperFactory.getCityMapper();
         typeMapper = mapperFactory.getTypeMapper();
@@ -60,7 +60,7 @@ public class UserService {
     }
 
     // Recherche par libellé
-    public RestaurantType findByLabel(String label) {
+    public List<RestaurantType> findByLabel(String label) {
         return typeMapper.findByLabel(label);
     }
     public List<Restaurant> getAllRestaurants() {
@@ -79,14 +79,17 @@ public class UserService {
         return all; }
 
     public List<Restaurant> findRestaurantsByType(String typeLabel) {
-        RestaurantType type = typeMapper.findByLabel(typeLabel);
+        List<RestaurantType> types = typeMapper.findByLabel(typeLabel);
+        if (types.isEmpty()) return Collections.emptyList(); // pas de type trouvé
+
+        RestaurantType type = types.get(0); // prend le premier élément A CHANGER CAR PAS OUF
         List<Restaurant> all = restaurantMapper.findAll();
         all.removeIf(r -> !r.getType().getId().equals(type.getId()));
         return all;
     }
 
-    public Restaurant addRestaurant(String name, String description, String website,
-                                    String street, City city, RestaurantType type) {
+        public Restaurant addRestaurant(String name, String description, String website,
+                                    String street, City city, RestaurantType type) throws SQLException {
         Restaurant restaurant = new Restaurant(null, name, description, website, street, city, type);
 
         // Gestion transactionnelle simple
@@ -140,7 +143,7 @@ public class UserService {
     public Set<Evaluation> getEvaluations(Restaurant restaurant) {
         return restaurant != null ? restaurant.getEvaluations() : Set.of();
     }
-    public BasicEvaluation addBasicEvaluation(Restaurant restaurant, Boolean like) {
+    public BasicEvaluation addBasicEvaluation(Restaurant restaurant, Boolean like) throws SQLException {
         if (restaurant == null || like == null) return null;
 
         String ipAddress;
@@ -163,7 +166,7 @@ public class UserService {
         return eval;
     }
 
-    public CompleteEvaluation addCompleteEvaluation(Restaurant restaurant, String username, String comment, Map<EvaluationCriteria, Integer> notes) {
+    public CompleteEvaluation addCompleteEvaluation(Restaurant restaurant, String username, String comment, Map<EvaluationCriteria, Integer> notes) throws SQLException {
         if (restaurant == null || username == null || notes == null) return null;
 
         CompleteEvaluation eval = new CompleteEvaluation(null, new Date(), restaurant, comment, username);
@@ -214,7 +217,7 @@ public class UserService {
         }
         return city;
     }
-    public Set<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) {
+    public Set<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) throws SQLException {
         if (restaurant == null) return Set.of();
 
         // Suppose que BasicEvaluationMapper a une méthode findByRestaurant
@@ -226,11 +229,9 @@ public class UserService {
 
         return basicEvals;
     }
-    public Set<CompleteEvaluation> getCompleteEvaluations(Restaurant restaurant) {
-        if (restaurant == null) return Set.of();
-
+    public List<CompleteEvaluation> getCompleteEvaluations(Restaurant restaurant) {
         // 🔹 Récupère depuis le mapper
-        Set<CompleteEvaluation> completeEvalsFromDB = completeEvaluationMapper.findByRestaurant(restaurant);
+        List<CompleteEvaluation> completeEvalsFromDB = completeEvaluationMapper.findByRestaurant(restaurant);
 
         // 🔹 Ajoute au restaurant pour que la méthode fonctionne ensuite
         restaurant.getEvaluations().removeIf(e -> e instanceof CompleteEvaluation);

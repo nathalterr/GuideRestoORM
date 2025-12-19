@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
+import ch.hearc.ig.guideresto.business.Grade;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
@@ -17,7 +18,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     private static final Map<Integer, CompleteEvaluation> identityMap = new HashMap<>();
     private final Connection connection;
     private RestaurantMapper restaurantMapper;
-    private GradeMapper gradeMapper;
+    private GradeMapper gradeMapper ;
 
     private static final String SQL_FIND_BY_ID = """
         SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
@@ -56,17 +57,16 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         WHERE nom_utilisateur = ? AND fk_rest = ?
         """;
 
-    public CompleteEvaluationMapper() {
+    public CompleteEvaluationMapper() throws SQLException {
         this.connection = getConnection();
     }
 
-    public CompleteEvaluationMapper(RestaurantMapper rm) {
+    public CompleteEvaluationMapper(RestaurantMapper rm) throws SQLException {
         this.connection = getConnection();
         this.restaurantMapper = rm;
-        this.gradeMapper = new GradeMapper();
     }
 
-    public CompleteEvaluationMapper(RestaurantMapper restaurantMapper, GradeMapper gradeMapper) {
+    public CompleteEvaluationMapper(RestaurantMapper restaurantMapper, GradeMapper gradeMapper) throws SQLException {
         this.connection = getConnection();
         this.restaurantMapper = restaurantMapper;
         this.gradeMapper = gradeMapper;
@@ -102,7 +102,13 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                     identityMap.put(eval.getId(), eval);
 
                     // 🔹 Charge aussi les notes associées
-                    eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
+
+                    if (eval.getId() != null && eval.getId() > 0 && eval.getGrades().isEmpty()) {
+                        GradeMapper gradeMapper = new GradeMapper();
+                        eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
+                    } else {
+                        logger.warn("CompleteEvaluation avec ID nul ou 0, skip grades: {}", eval);
+                    }
 
                     return eval;
                 }
@@ -151,7 +157,12 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
                 // 🔹 Lazy-load des notes seulement si besoin
                 if (eval.getGrades().isEmpty()) {
-                    eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
+                    if (eval.getId() != null && eval.getId() > 0 && eval.getGrades().isEmpty()) {
+                        GradeMapper gradeMapper = new GradeMapper();
+                        eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
+                    } else {
+                        logger.warn("CompleteEvaluation avec ID nul ou 0, skip grades: {}", eval);
+                    }
                 }
 
                 evaluations.add(eval);
@@ -278,8 +289,8 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return "SELECT COUNT(*) FROM COMMENTAIRES";
     }
 
-    public Set<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
-        Set<CompleteEvaluation> evaluations = new LinkedHashSet<>();
+    public List<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
+        List<CompleteEvaluation> evaluations = new ArrayList<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_RESTAURANT)) {
             stmt.setInt(1, restaurant.getId());
@@ -300,7 +311,12 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                     }
 
                     if (eval.getGrades().isEmpty()) {
-                        eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
+                        GradeMapper gradeMapper = new GradeMapper();
+                        if (eval.getId() != null && eval.getId() > 0 && eval.getGrades().isEmpty()) {
+                            eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
+                        } else {
+                            logger.warn("CompleteEvaluation avec ID nul ou 0, skip grades: {}", eval);
+                        }
                     }
 
                     evaluations.add(eval);

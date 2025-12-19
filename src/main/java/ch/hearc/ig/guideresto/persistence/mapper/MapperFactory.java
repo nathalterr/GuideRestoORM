@@ -1,5 +1,7 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
+import java.sql.SQLException;
+
 public class MapperFactory {
 
     private final CityMapper cityMapper;
@@ -10,7 +12,7 @@ public class MapperFactory {
     private final CompleteEvaluationMapper completeEvalMapper;
     private final EvaluationCriteriaMapper criteriaMapper;
 
-    public MapperFactory() {
+    public MapperFactory() throws SQLException {
         // 🔹 Crée d'abord les mappers "indépendants"
         this.cityMapper = new CityMapper();
         this.typeMapper = new RestaurantTypeMapper();

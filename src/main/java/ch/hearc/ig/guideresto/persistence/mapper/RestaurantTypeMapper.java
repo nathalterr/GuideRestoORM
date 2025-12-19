@@ -69,7 +69,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     """;
 
 
-    public RestaurantTypeMapper() {
+    public RestaurantTypeMapper() throws SQLException {
         this.connection = getConnection();
     }
 

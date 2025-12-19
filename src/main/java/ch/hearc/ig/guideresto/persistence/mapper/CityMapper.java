@@ -63,7 +63,7 @@ public class CityMapper extends AbstractMapper<City> {
         WHERE nom_ville = ?
         """;
 
-    public CityMapper() {
+    public CityMapper() throws SQLException {
         this.connection = getConnection();
     }
 
@@ -99,7 +99,7 @@ public class CityMapper extends AbstractMapper<City> {
     public List<City> findByZipCode(String zipCode) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("City.findByZipCode", City.class)
-                .setParameter("zipCode" + "%" + zipCode + "%")
+                .setParameter("zipCode", "%" + zipCode + "%")
                 .getResultList();
     }
 
@@ -263,26 +263,6 @@ public class CityMapper extends AbstractMapper<City> {
             throw e;
         }
 
-        return null;
-    }
-
-    public City findByZipCode(String zipCode) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ZIP_CODE)) {
-            stmt.setString(1, zipCode);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    if (identityMap.containsKey(id)) return identityMap.get(id);
-                    City city = new City(
-                            id,
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-                    identityMap.put(id, city);
-                    return city;
-                }
-            }
-        }
         return null;
     }
 

@@ -17,7 +17,7 @@ import java.util.Set;
 
 @NamedQuery(
         name = "City.findByCityName",
-        query = "SELECT c FROM City c WHERE c.name LIKE :name"
+        query = "SELECT c FROM City c WHERE c.cityName LIKE :name"
 )
 
 @Table(name="VILLES")

@@ -7,13 +7,14 @@ import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 public class RestaurantService {
     private final RestaurantMapper restaurantMapper = new RestaurantMapper();
 
-    public RestaurantService() {
+    public RestaurantService() throws SQLException {
     }
 
     public List<Restaurant> getAllRestaurants() {
@@ -23,7 +24,8 @@ public class RestaurantService {
     public List<Restaurant> findRestaurantsByName(String name) throws SQLException {
         return restaurantMapper.findByName(name);
     }
-    public List<Restaurant> findRestaurantsByName(List<Restaurant> restaurants, String name) throws SQLException {
+    //Celle ci doit retourner qu'un resto car elle doit isoler un seul resto
+    public Restaurant findRestaurantsByName(List<Restaurant> restaurants, String name) throws SQLException {
         for (Restaurant r : restaurants) {
             if (r.getName().equalsIgnoreCase(name)) {
                 return r;
@@ -39,11 +41,14 @@ public class RestaurantService {
     }
 
     public List<Restaurant> findRestaurantsByType(String typeLabel, RestaurantTypeMapper typeMapper) {
-        RestaurantType type = typeMapper.findByLabel(typeLabel);
+        List<RestaurantType> types = typeMapper.findByLabel(typeLabel);
+
+        RestaurantType type = types.get(0); // prend le premier élément
         List<Restaurant> all = restaurantMapper.findAll();
-        all.removeIf(r -> !r.getType().getId().equals(type.getId()));
+        all.removeIf(r -> !r.getType().getId().equals(type.getId())); // filtre les restaurants
         return all;
     }
+
 
     public Restaurant addRestaurant(String name, String description, String website,
                                     String street, City city, RestaurantType type) {

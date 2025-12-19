@@ -59,7 +59,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         """;
 
 
-    public BasicEvaluationMapper() {
+    public BasicEvaluationMapper() throws SQLException {
         this.connection = getConnection();
         this.restaurantMapper = new RestaurantMapper();
     }

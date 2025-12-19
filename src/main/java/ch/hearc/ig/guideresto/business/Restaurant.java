@@ -30,7 +30,7 @@ import java.util.Set;
 
  @NamedQuery(
          name = "Restaurant.findByLocalisation",
-         query = "SELECT r FROM Restaurant r WHERE r.street LIKE :street"
+         query = "SELECT r FROM Restaurant r WHERE r.address.street LIKE :street"
  )
 
  @Table(name = "RESTAURANTS")
@@ -47,7 +47,6 @@ public class Restaurant implements IBusinessObject {
     private String website;
     @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CompleteEvaluation> completeEvaluations;
-
     @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BasicEvaluation> basicEvaluations;
     @Transient

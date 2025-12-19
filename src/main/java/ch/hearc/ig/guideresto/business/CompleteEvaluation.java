@@ -19,7 +19,7 @@ import java.util.Set;
 
 @NamedQuery(
         name = "CompleteEvaluation.findByUsername",
-        query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.username LIKEE :username"
+        query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.username LIKE :username"
 )
 
 @Table(name="COMMENTAIRES")

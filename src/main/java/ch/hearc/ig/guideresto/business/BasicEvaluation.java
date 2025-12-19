@@ -11,7 +11,7 @@ import java.util.Date;
 
 @NamedQuery(
         name = "BasicEvaluation.findByLikeRestaurant",
-        query = "SELECT be FROM BasicEvaluation be WHERE be.likeRestaurant LIKE :likeRestaurant"
+        query = "SELECT be FROM BasicEvaluation be WHERE be.likeRestaurant = :likeRestaurant"
 )
 
 @NamedQuery(

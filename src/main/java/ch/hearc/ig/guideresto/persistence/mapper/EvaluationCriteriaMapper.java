@@ -42,7 +42,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
             """
         UPDATE CRITERES_EVALUATION
         SET nom = ?, description = ?
-        WHERE numer
+        WHERE number = ?;
                  """;
 
     private static final String SQL_FIND_BY_NAME =
@@ -52,7 +52,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         WHERE no
                  """;
 
-    public EvaluationCriteriaMapper() {
+    public EvaluationCriteriaMapper() throws SQLException {
         this.connection = getConnection();
     }
 
@@ -89,15 +89,8 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                 .getResultList();
     }
 
-    public List<EvaluationCriteria> findByName(String name) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("EvaluationCriteria.findByName", EvaluationCriteria.class)
-                .setParameter("name", "%" + name + "%")
-                .getResultList();
-    }
-
     public List<EvaluationCriteria> findByDescription(String description) {
-        EntityManager em = getEntityManager(),
+        EntityManager em = getEntityManager();
        return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
             .setParameter("descripton","%" + description + "%")
             .getResultList();

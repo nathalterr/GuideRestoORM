@@ -4,24 +4,22 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.mapper.BasicEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.CompleteEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.GradeMapper;
+import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 public class EvaluationService {
-    private final BasicEvaluationMapper basicEvaluationMapper;
-    private final CompleteEvaluationMapper completeEvaluationMapper;
-    private final GradeMapper gradeMapper;
+    private final BasicEvaluationMapper basicEvaluationMapper = new BasicEvaluationMapper();
+    private final CompleteEvaluationMapper completeEvaluationMapper = new CompleteEvaluationMapper();
+    private final GradeMapper gradeMapper  = new GradeMapper();
 
-    public EvaluationService(BasicEvaluationMapper basicEvaluationMapper,
-                             CompleteEvaluationMapper completeEvaluationMapper,
-                             GradeMapper gradeMapper) {
-        this.basicEvaluationMapper = basicEvaluationMapper;
-        this.completeEvaluationMapper = completeEvaluationMapper;
-        this.gradeMapper = gradeMapper;
+    public EvaluationService() throws SQLException {
     }
 
     public Integer countLikes(Restaurant restaurant, boolean like) {
@@ -33,10 +31,6 @@ public class EvaluationService {
             }
         }
         return count;
-    }
-
-    public Set<Evaluation> getEvaluations(Restaurant restaurant) {
-        return restaurant != null ? restaurant.getEvaluations() : Set.of();
     }
 
     public BasicEvaluation addBasicEvaluation(Restaurant restaurant, Boolean like) {
@@ -80,9 +74,8 @@ public class EvaluationService {
         return basicEvals;
     }
 
-    public Set<CompleteEvaluation> getCompleteEvaluations(Restaurant restaurant) {
-        if (restaurant == null) return Set.of();
-        Set<CompleteEvaluation> completeEvalsFromDB = completeEvaluationMapper.findByRestaurant(restaurant);
+    public List<CompleteEvaluation> getCompleteEvaluations(Restaurant restaurant) {
+        List<CompleteEvaluation> completeEvalsFromDB = completeEvaluationMapper.findByRestaurant(restaurant);
         restaurant.getEvaluations().removeIf(e -> e instanceof CompleteEvaluation);
         restaurant.getEvaluations().addAll(completeEvalsFromDB);
         return completeEvalsFromDB;

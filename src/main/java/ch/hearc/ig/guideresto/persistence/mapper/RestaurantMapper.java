@@ -74,7 +74,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         WHERE LOWER(nom) LIKE LOWER(?)
         """;
 
-    public RestaurantMapper() {
+    public RestaurantMapper() throws SQLException {
         this.connection = getConnection();
     }
 
@@ -150,7 +150,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     public List<Restaurant> findByLocalisation(String street) {
         EntityManager em = getEntityManager();
-        return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
+        return em.createNamedQuery("Restaurant.findByLocalisation", Restaurant.class)
                 .setParameter("street", "%" + street + "%")
                 .getResultList();
     }
@@ -158,7 +158,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     @Override
     public List<Restaurant> findAll() {
         identityMap.clear(); // vider le cache pour recharger depuis la DB
-        List<Restaurant> restaurants = List.of();
+        List<Restaurant> restaurants = new ArrayList<>(); // <-- mutable maintenant
 
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
@@ -166,7 +166,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             while (rs.next()) {
                 Integer id = rs.getInt("numero");
 
-                // Création des objets associés
                 Integer typeId = rs.getInt("fk_type");
                 Integer cityId = rs.getInt("fk_vill");
 
@@ -182,10 +181,8 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
                     continue;
                 }
 
-                // Création de la localisation
                 Localisation address = new Localisation(rs.getString("adresse"), city);
 
-                // Création du restaurant sans ID
                 Restaurant restaurant = new Restaurant(
                         rs.getString("nom"),
                         rs.getString("description"),
@@ -193,12 +190,10 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
                         address,
                         type
                 );
-                // Assigner l'ID
                 restaurant.setId(id);
 
-                // Ajout au cache et au set
                 identityMap.put(id, restaurant);
-                restaurants.add(restaurant);
+                restaurants.add(restaurant); // ok maintenant
             }
 
         } catch (SQLException e) {
@@ -207,6 +202,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
         return restaurants;
     }
+
 
 
     @Override
@@ -439,14 +435,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         }
 
         return restaurants;
-    }
-
-    public List<Restaurant> findByName(String name) {
-        EntityManager em = getEntityManager();
-        //Retour d'une liste de restaurant avec le nom en paramètre
-        return  em.createNamedQuery("Restaurant.findByName", Restaurant.class)
-                .setParameter("name", "%" + name + "%")
-                .getResultList();
     }
 
 

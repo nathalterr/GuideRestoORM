@@ -10,7 +10,7 @@ import jakarta.persistence.*;
 
 @NamedQuery(
         name = "Grade.findByGrade",
-        query = "SELECT g FROM Grade g WHERE g.grade LIKE :grade"
+        query = "SELECT g FROM Grade g WHERE g.grade = :grade"
 )
 
 @Table(name="NOTES")

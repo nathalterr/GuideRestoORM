@@ -2,6 +2,8 @@ Dans les mappers, j'ai l'impression qu'il faut faire gaffe à la duplication de 
 
 Complete Eval n'a pas d'ID ???
 
+findRestaurantsByType dans user service en gros les labels je crois que c'est unique donc on pourrait sans autre faire qu'il prenne qu'un label bref
+
 public void setDependenciesEval(CompleteEvaluationMapper completeEvalMapper,
 GradeMapper gradeMapper,
 BasicEvaluationMapper basicEvalMapper) {

@@ -2,12 +2,15 @@ package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
+import ch.hearc.ig.guideresto.services.EvaluationService;
 import ch.hearc.ig.guideresto.services.RestaurantService;
 import ch.hearc.ig.guideresto.services.UserService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.sql.SQLException;
 import java.util.*;
+
+import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.closePool;
 
 /**
  * @author cedric.baudet
@@ -17,8 +20,28 @@ public class Application {
 
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
-    private static final UserService userService = new UserService();
-    private static RestaurantService restoServ = new RestaurantService();
+    private static final UserService userService;
+
+    static {
+        try {
+            userService = new UserService();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static RestaurantService restoServ;
+    private static EvaluationService evalServ;
+
+
+    static {
+        try {
+            restoServ = new RestaurantService();
+            evalServ = new EvaluationService();
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static void main(String[] args) {
 
@@ -75,6 +98,7 @@ public class Application {
                 break;
             case 0:
                 System.out.println("Au revoir !");
+                closePool();
                 break;
             default:
                 System.out.println("Erreur : saisie incorrecte. Veuillez réessayer");
@@ -275,7 +299,7 @@ public class Application {
     /**
      * Le programme demande les informations nécessaires à l'utilisateur puis crée un nouveau restaurant dans le système.
      */
-    private static void addNewRestaurant() {
+    private static void addNewRestaurant() throws SQLException {
         System.out.print("Nom du restaurant : ");
         String name = readString();
         System.out.print("Description : ");
@@ -331,8 +355,8 @@ public class Application {
             System.out.println();
 
 
-            Set<CompleteEvaluation> completeEvals = userService.getCompleteEvaluations(restaurant);
-
+            List<CompleteEvaluation> completeEvals = evalServ.getCompleteEvaluations(restaurant);
+            System.out.println("test");
             // 🔹 Likes / Dislikes
             // Récupérer BasicEvaluation depuis le service
             userService.getBasicEvaluations(restaurant);
@@ -468,7 +492,7 @@ public class Application {
      * @param restaurant Le restaurant qui est évalué
      * @param like       Est-ce un like ou un dislike ?
      */
-    private static void addBasicEvaluation(Restaurant restaurant, Boolean like) {
+    private static void addBasicEvaluation(Restaurant restaurant, Boolean like) throws SQLException {
         Restaurant myRestaurant = userService.getAllRestaurants().iterator().next(); // juste pour l'exemple
         userService.addBasicEvaluation(myRestaurant, like);
         System.out.println("Votre vote a été pris en compte !");
@@ -479,7 +503,7 @@ public class Application {
      *
      * @param restaurant Le restaurant à évaluer
      */
-    private static void evaluateRestaurant(Restaurant restaurant) {
+    private static void evaluateRestaurant(Restaurant restaurant) throws SQLException {
         System.out.print("Nom d'utilisateur : ");
         String username = readString();
 
@@ -584,7 +608,7 @@ public class Application {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equalsIgnoreCase("o")) {
-            boolean deleted = userService.deleteRestaurantService(restaurant);
+            boolean deleted = restoServ.deleteRestaurant(restaurant);
             System.out.println(deleted ? "Restaurant supprimé avec succès !" : "Erreur lors de la suppression.");
         } else {
             System.out.println("Suppression annulée.");
