@@ -77,40 +77,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         this.gradeMapper = gradeMapper;
     }
 
-    @Override
     public CompleteEvaluation findById(Integer id) {
-        // ✅ Vérifie d'abord le cache
-        if (identityMap.containsKey(id)) {
-            System.out.println("⚡ Évaluation " + id + " récupérée depuis l'Identity Map");
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Restaurant restaurant = restaurantMapper.findById(rs.getInt("fk_rest"));
-                    CompleteEvaluation eval = new CompleteEvaluation(
-                            rs.getInt("numero"),
-                            rs.getDate("date_eval"),
-                            restaurant,
-                            rs.getString("commentaire"),
-                            rs.getString("nom_utilisateur")
-                    );
-
-                    // Ajout au cache
-                    identityMap.put(eval.getId(), eval);
-
-                    // 🔹 Charge aussi les notes associées
-                    eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
-
-                    return eval;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findById : {}", e.getMessage());
-        }
-        return null;
+        EntityManager em = getEntityManager();
+        return em.find(CompleteEvaluation.class, id);
     }
 
     public List<CompleteEvaluation> findByComment(String comment) {
@@ -129,78 +98,28 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public List<CompleteEvaluation> findAll() {
-        List<CompleteEvaluation> evaluations = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-                CompleteEvaluation eval = identityMap.get(id);
-
-                if (eval == null) {
-                    Restaurant restaurant = restaurantMapper.findById(rs.getInt("fk_rest"));
-                    eval = new CompleteEvaluation(
-                            id,
-                            rs.getDate("date_eval"),
-                            restaurant,
-                            rs.getString("commentaire"),
-                            rs.getString("nom_utilisateur")
-                    );
-                    identityMap.put(id, eval);
-                }
-
-                // 🔹 Lazy-load des notes seulement si besoin
-                if (eval.getGrades().isEmpty()) {
-                    eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
-                }
-
-                evaluations.add(eval);
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findAll : {}", e.getMessage());
-        }
-        return evaluations;
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT ce FROM CompleteEvaluation ce",
+                CompleteEvaluation.class
+        ).getResultList();
     }
 
     @Override
-    public CompleteEvaluation create(CompleteEvaluation evaluation) {
-        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
+    public CompleteEvaluation create(CompleteEvaluation completeEvaluation) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            stmt.setDate(1, new java.sql.Date(evaluation.getVisitDate().getTime()));
-            stmt.setString(2, evaluation.getComment());
-            stmt.setString(3, evaluation.getUsername());
-            stmt.setInt(4, evaluation.getRestaurant().getId());
-            stmt.registerOutParameter(5, Types.INTEGER);
-
-            stmt.executeUpdate();
-
-            Integer generatedId = stmt.getInt(5);
-            evaluation.setId(generatedId);
-
-            // ✅ Ajout dans le cache
-            identityMap.put(generatedId, evaluation);
-
-            if (!connection.getAutoCommit()) connection.commit();
-
-            return evaluation;
-
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1) {
-                try {
-                    return findByUserAndRest(evaluation.getUsername(), evaluation.getRestaurant().getId());
-                } catch (SQLException ex) {
-                    logger.error("Erreur findByUserAndRest après doublon: {}", ex.getMessage());
-                }
-            } else {
-                logger.error("Erreur create CompleteEvaluation: {}", e.getMessage());
+        try {
+            tx.begin();
+            em.persist(completeEvaluation);
+            tx.commit();
+            return completeEvaluation;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            try {
-                connection.rollback();
-            } catch (SQLException r) {
-                logger.error("Rollback failed: {}", r.getMessage());
-            }
-
+            logger.error("Erreur create CompleteEvaluation", e);
             return null;
         }
     }

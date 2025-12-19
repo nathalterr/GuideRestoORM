@@ -21,6 +21,11 @@ import java.util.Set;
         query = "SELECT ec FROM EvaluationCriteria ec WHERE ec.description LIKE :description"
 )
 
+@NamedQuery(
+        name = "EvaluationCriteria.findAll",
+        query = "SELECT ec FROM EvaluationCriteria ec"
+)
+
 @Table(name="CRITERES_EVALUATION")
 public class EvaluationCriteria implements IBusinessObject {
     @Id

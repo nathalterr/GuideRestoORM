@@ -21,6 +21,11 @@ import java.util.Set;
         query = "SELECT rt FROM RestaurantType rt WHERE rt.description LIKE :description"
 )
 
+@NamedQuery(
+        name = "RestaurantType.findAll",
+        query = "SELECT rt FROM RestaurantType rt"
+)
+
 @Table(name="TYPES_GASTRONOMIQUES")
 public class RestaurantType implements IBusinessObject {
     @Id

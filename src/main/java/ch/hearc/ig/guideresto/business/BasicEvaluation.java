@@ -19,6 +19,11 @@ import java.util.Date;
         query = "SELECT be FROM BasicEvaluation be WHERE be.ipAddress LIKE :ipAddress"
 )
 
+@NamedQuery(
+        name = "BasicEvaluation.findAll",
+        query = "SELECT be FROM BasicEvaluation be"
+)
+
 @Table(name="LIKES")
 public class BasicEvaluation extends Evaluation {
 

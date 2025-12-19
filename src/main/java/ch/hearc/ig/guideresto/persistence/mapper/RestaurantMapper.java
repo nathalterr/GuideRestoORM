@@ -88,43 +88,9 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         this.typeMapper = typeMapper;
     }
 
-
     public Restaurant findById(Integer id) {
-        // Vérifie le cache d'abord
-        if (identityMap.containsKey(id)) {
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    // Crée City "léger" pour éviter boucle infinie
-                    City city = this.cityMapper.findById(rs.getInt("fk_vill"));
-                    RestaurantType type = this.typeMapper.findById(rs.getInt("fk_type"));
-
-                    Localisation address = new Localisation(rs.getString("adresse"), city);
-
-                    Restaurant restaurant = new Restaurant(
-                            id,
-                            rs.getString("nom"),
-                            rs.getString("description"),
-                            rs.getString("site_web"),
-                            address,
-                            type
-                    );
-
-                    identityMap.put(id, restaurant);
-
-                    return restaurant;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur findById Restaurant: {}", e.getMessage());
-        }
-
-        return null;
+        EntityManager em = getEntityManager();
+        return em.find(Restaurant.class, id);
     }
 
     public List<Restaurant> findByName(String name) {
@@ -157,57 +123,31 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public List<Restaurant> findAll() {
-        identityMap.clear(); // vider le cache pour recharger depuis la DB
-        List<Restaurant> restaurants = List.of();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-
-                // Création des objets associés
-                Integer typeId = rs.getInt("fk_type");
-                Integer cityId = rs.getInt("fk_vill");
-
-                RestaurantType type = this.typeMapper.findById(typeId);
-                City city = this.cityMapper.findById(cityId);
-
-                if (type == null) {
-                    logger.warn("⚠ Restaurant {} ignoré : type {} introuvable", id, typeId);
-                    continue;
-                }
-                if (city == null) {
-                    logger.warn("⚠ Restaurant {} ignoré : city {} introuvable", id, cityId);
-                    continue;
-                }
-
-                // Création de la localisation
-                Localisation address = new Localisation(rs.getString("adresse"), city);
-
-                // Création du restaurant sans ID
-                Restaurant restaurant = new Restaurant(
-                        rs.getString("nom"),
-                        rs.getString("description"),
-                        rs.getString("site_web"),
-                        address,
-                        type
-                );
-                // Assigner l'ID
-                restaurant.setId(id);
-
-                // Ajout au cache et au set
-                identityMap.put(id, restaurant);
-                restaurants.add(restaurant);
-            }
-
-        } catch (SQLException e) {
-            logger.error("Erreur findAll Restaurant: {}", e.getMessage());
-        }
-
-        return restaurants;
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT r FROM Restaurant r",
+                Restaurant.class
+        ).getResultList();
     }
 
+    @Override
+    public Restaurant create(Restaurant restaurant) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+            em.persist(restaurant);
+            tx.commit();
+            return restaurant;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Erreur create Restaurant", e);
+            return null;
+        }
+    }
 
     @Override
     public Restaurant create(Restaurant restaurant) {

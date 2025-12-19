@@ -64,32 +64,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         this.restaurantMapper = new RestaurantMapper();
     }
 
-
     public BasicEvaluation findById(Integer id) {
-        if (identityMap.containsKey(id)) {
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Restaurant restaurant = restaurantMapper.findById(rs.getInt("fk_rest"));
-                    BasicEvaluation eval = new BasicEvaluation(
-                            rs.getInt("numero"),
-                            rs.getDate("date_eval"),
-                            restaurant,
-                            "Y".equalsIgnoreCase(rs.getString("appreciation")),
-                            rs.getString("adresse_ip")
-                    );
-                    identityMap.put(eval.getId(), eval);
-                    return eval;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("SQLException in findById: {}", ex.getMessage());
-        }
-        return null;
+        EntityManager em = getEntityManager();
+        return em.find(BasicEvaluation.class, id);
     }
 
     public List<BasicEvaluation> findByLikeRestaurant(Boolean likeRestaurant) {
@@ -108,57 +85,28 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public List<BasicEvaluation> findAll() {
-        List<BasicEvaluation> evaluations = new ArrayList<>();
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL );
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-                BasicEvaluation eval = identityMap.get(id);
-                if (eval == null) {
-                    Restaurant restaurant = restaurantMapper.findById(rs.getInt("fk_rest"));
-                    eval = new BasicEvaluation(
-                            id,
-                            rs.getDate("date_eval"),
-                            restaurant,
-                            "Y".equalsIgnoreCase(rs.getString("appreciation")),
-                            rs.getString("adresse_ip")
-                    );
-                    identityMap.put(id, eval);
-                }
-                evaluations.add(eval);
-            }
-        } catch (SQLException ex) {
-            logger.error("SQLException in findAll: {}", ex.getMessage());
-        }
-        return evaluations;
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT be FROM BasicEvaluation, be",
+                BasicEvaluation.class
+        ).getResultList();
     }
 
     @Override
     public BasicEvaluation create(BasicEvaluation eval) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_CREATE, new String[]{"numero"})) {
-            stmt.setDate(1, new java.sql.Date(eval.getVisitDate().getTime()));
-            stmt.setString(2, eval.getLikeRestaurant() != null && eval.getLikeRestaurant() ? "Y" : "N");
-            stmt.setString(3, eval.getIpAddress());
-            stmt.setInt(4, eval.getRestaurant().getId());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows == 0) throw new SQLException("Création échouée, aucune ligne insérée.");
-
-            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    eval.setId(generatedKeys.getInt(1));
-                    identityMap.put(eval.getId(), eval);
-                } else {
-                    throw new SQLException("Impossible de récupérer l'ID généré.");
-                }
-            }
-
-            if (!connection.getAutoCommit()) connection.commit();
+        try {
+            tx.begin();
+            em.persist(eval);
+            tx.commit();
             return eval;
-
-        } catch (SQLException e) {
-            logger.error("Erreur create BasicEvaluation: {}", e.getMessage());
-            try { if (!connection.getAutoCommit()) connection.rollback(); } catch (SQLException r) { logger.error("Rollback failed: {}", r.getMessage()); }
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Erreur create BasicEvaluation", e);
             return null;
         }
     }

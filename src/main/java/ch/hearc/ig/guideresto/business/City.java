@@ -20,6 +20,11 @@ import java.util.Set;
         query = "SELECT c FROM City c WHERE c.name LIKE :name"
 )
 
+@NamedQuery(
+        name = "City.findAll",
+        query = "SELECT c FROM City c"
+)
+
 @Table(name="VILLES")
 public class City implements IBusinessObject {
     @Id

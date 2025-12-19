@@ -65,38 +65,10 @@ public class GradeMapper extends AbstractMapper<Grade> {
         this.evaluationMapper = new CompleteEvaluationMapper();
     }
 
-    @Override
     public Grade findById(Integer id) {
-        // ✅ Vérifie d’abord le cache
-        if (identityMap.containsKey(id)) {
-            System.out.println("⚡ Grade " + id + " récupéré depuis l'Identity Map");
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    CompleteEvaluation eval = evaluationMapper.findById(rs.getInt("fk_comm"));
-                    EvaluationCriteria crit = criteriaMapper.findById(rs.getInt("fk_crit"));
-                    Grade grade = new Grade(
-                            rs.getInt("numero"),
-                            rs.getInt("note"),
-                            eval,
-                            crit
-                    );
-
-                    // ✅ Stocker dans la Map
-                    identityMap.put(id, grade);
-                    return grade;
-                }
-            }
-        } catch (SQLException ex) {
-            System.err.println("Erreur findById Grade : " + ex.getMessage());
-        }
-        return null;
+        EntityManager em = getEntityManager();
+        return em.find(Grade.class, id);
     }
-
 
     public List<Grade> findByGrade(Integer grade) {
         EntityManager em = getEntityManager();
@@ -107,54 +79,31 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public List<Grade> findAll() {
-        List<Grade> grades = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-                Grade grade = identityMap.get(id);
-
-                if (grade == null) {
-                    CompleteEvaluation eval = evaluationMapper.findById(rs.getInt("fk_comm"));
-                    EvaluationCriteria crit = criteriaMapper.findById(rs.getInt("fk_crit"));
-                    grade = new Grade(id, rs.getInt("note"), eval, crit);
-                    identityMap.put(id, grade);
-                }
-                grades.add(grade);
-            }
-        } catch (SQLException ex) {
-            System.err.println("Erreur findAll Grade : " + ex.getMessage());
-        }
-        return grades;
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT g FROM Grade g",
+                Grade.class
+        ).getResultList();
     }
 
     @Override
     public Grade create(Grade grade) {
-        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
-            stmt.setInt(1, grade.getGrade());
-            stmt.setInt(2, grade.getEvaluation().getId());
-            stmt.setInt(3, grade.getCriteria().getId());
-            stmt.registerOutParameter(4, Types.INTEGER);
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            stmt.executeUpdate();
-
-            Integer generatedId = stmt.getInt(4);
-            grade.setId(generatedId);
-            identityMap.put(generatedId, grade); // ✅ Ajouter au cache
-
-            if (!connection.getAutoCommit()) connection.commit();
+        try {
+            tx.begin();
+            em.persist(grade);
+            tx.commit();
             return grade;
-
-        } catch (SQLException e) {
-            System.err.println("Erreur create Grade: " + e.getMessage());
-            try { connection.rollback(); } catch (SQLException r) {
-                System.err.println("Rollback échoué : " + r.getMessage());
-            }
-            return null;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
         }
+        logger.error("Erreur create Grade", e);
+        return null;
     }
+}
 
     @Override
     public boolean update(Grade grade) {

@@ -22,6 +22,11 @@ import java.util.Set;
         query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.username LIKEE :username"
 )
 
+@NamedQuery(
+        name = "CompleteEvaluation.findAll",
+        query = "SELECT ce FROM CompleteEvaluation ce"
+)
+
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {
 

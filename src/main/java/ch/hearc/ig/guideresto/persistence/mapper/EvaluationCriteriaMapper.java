@@ -56,37 +56,9 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         this.connection = getConnection();
     }
 
-    @Override
     public EvaluationCriteria findById(Integer id) {
-        // ✅ Vérifie d’abord le cache
-        if (identityMap.containsKey(id)) {
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    EvaluationCriteria crit = new EvaluationCriteria(
-                            rs.getInt("numero"),
-                            rs.getString("nom"),
-                            rs.getString("description")
-                    );
-                    identityMap.put(id, crit);
-                    return crit;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findById : {}", e.getMessage());
-        }
-        return null;
-    }
-
-    public List<EvaluationCriteria> findByName(String name) {
         EntityManager em = getEntityManager();
-        return em.createNamedQuery("EvaluationCriteria.findByName", EvaluationCriteria.class)
-                .setParameter("name", "%" + name + "%")
-                .getResultList();
+        return em.find(EvaluationCriteria.class, id);
     }
 
     public List<EvaluationCriteria> findByName(String name) {
@@ -97,48 +69,39 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     }
 
     public List<EvaluationCriteria> findByDescription(String description) {
-        EntityManager em = getEntityManager(),
+        EntityManager em = getEntityManager();
        return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
-            .setParameter("descripton","%" + description + "%")
+            .setParameter("description","%" + description + "%")
             .getResultList();
     }
 
     @Override
     public List<EvaluationCriteria> findAll() {
-        List<EvaluationCriteria> criteres = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-                EvaluationCriteria crit = identityMap.get(id);
-
-                if (crit == null) {
-                    crit = new EvaluationCriteria(
-                            id,
-                            rs.getString("nom"),
-                            rs.getString("description")
-                    );
-                    identityMap.put(id, crit);
-                }
-                criteres.add(crit);
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findAll : {}", e.getMessage());
-        }
-        return criteres;
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT ec FROM EvaluationCriteria ec",
+                EvaluationCriteria.class
+        ).getResultList();
     }
 
     @Override
-    public EvaluationCriteria create(EvaluationCriteria critere) {
+    public EvaluationCriteria create(EvaluationCriteria evaluationCriteria) {
         EntityManager em = getEntityManager();
-        em.getTransaction().begin();
-        em.persist(critere);
-        em.getTransaction().commit();
-        return critere;
-    }
+        EntityTransaction tx = em.getTransaction();
 
+        try {
+            tx.begin();
+            em.persist(evaluationCriteria);
+            tx.commit();
+            return evaluationCriteria;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Erreur create evaluationCriteria", e);
+            return null;
+        }
+    }
 
     @Override
     public boolean update(EvaluationCriteria critere) {

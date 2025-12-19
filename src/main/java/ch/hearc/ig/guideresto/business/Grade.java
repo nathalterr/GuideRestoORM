@@ -13,6 +13,11 @@ import jakarta.persistence.*;
         query = "SELECT g FROM Grade g WHERE g.grade LIKE :grade"
 )
 
+@NamedQuery(
+        name = "Grade.findAll",
+        query = "SELECT g FROM Grade g"
+)
+
 @Table(name="NOTES")
 public class Grade implements IBusinessObject {
     @Id

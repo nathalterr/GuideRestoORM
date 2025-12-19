@@ -33,6 +33,11 @@ import java.util.Set;
          query = "SELECT r FROM Restaurant r WHERE r.street LIKE :street"
  )
 
+ @NamedQuery(
+         name = "Restaurant.findAll",
+         query = "SELECT r FROM Restaurant r"
+ )
+
  @Table(name = "RESTAURANTS")
 public class Restaurant implements IBusinessObject {
     @Id

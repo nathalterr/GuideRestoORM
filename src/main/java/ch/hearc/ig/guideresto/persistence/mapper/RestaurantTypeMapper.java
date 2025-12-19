@@ -73,33 +73,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         this.connection = getConnection();
     }
 
-    @Override
     public RestaurantType findById(Integer id) {
-        // 🔹 Vérifie d'abord dans le cache
-        if (identityMap.containsKey(id)) {
-
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    RestaurantType type = new RestaurantType(
-                            rs.getInt("numero"),
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
-
-                    // Ajout dans le cache
-                    identityMap.put(type.getId(), type);
-                    return type;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("findById SQLException: {}", ex.getMessage());
-        }
-        return null;
+        EntityManager em = getEntityManager();
+        return em.find(RestaurantType.class, id);
     }
 
     public List<RestaurantType> findByLabel(String label) {
@@ -118,73 +94,28 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     @Override
     public List<RestaurantType> findAll() {
-        List<RestaurantType> types = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-
-                RestaurantType type = identityMap.get(id);
-                if (type == null) {
-                    type = new RestaurantType(
-                            id,
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
-                    identityMap.put(id, type);
-                }
-
-                types.add(type);
-            }
-        } catch (SQLException ex) {
-            logger.error("findAll SQLException: {}", ex.getMessage());
-        }
-        return types;
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery(
+                "RestaurantType.findAll",
+                RestaurantType.class
+        ).getResultList();
     }
 
     @Override
-    public RestaurantType create(RestaurantType type) {
+    public RestaurantType create(RestaurantType restaurantType) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
         try {
-            // 🔹 Vérifie si le type existe déjà pour éviter doublon inutile
-            RestaurantType existing = findByName(type.getLabel());
-            if (existing != null) {
-                return existing;
+            tx.begin();
+            em.persist(restaurantType);
+            tx.commit();
+            return restaurantType;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            // 🔹 Génération de l'ID via la séquence
-            int id;
-            try (PreparedStatement seqStmt = connection.prepareStatement(SQL_CREATE_GENERATE_ID)) {
-                try (ResultSet rs = seqStmt.executeQuery()) {
-                    if (!rs.next()) throw new SQLException("Impossible de récupérer NEXTVAL pour SEQ_TYPES_GASTRONOMIQUES");
-                    id = rs.getInt(1);
-                }
-            }
-            type.setId(id);
-
-            // 🔹 Insert dans la table
-            try (PreparedStatement stmt = connection.prepareStatement(SQL_CREATE_INSERT)) {
-                stmt.setInt(1, type.getId());
-                stmt.setString(2, type.getLabel());
-                stmt.setString(3, type.getDescription());
-                stmt.executeUpdate();
-            }
-
-            // 🔹 Commit si nécessaire
-            if (!connection.getAutoCommit()) connection.commit();
-
-            // 🔹 Ajout au cache
-            identityMap.put(type.getId(), type);
-
-            return type;
-
-        } catch (SQLException e) {
-            logger.error("Erreur create RestaurantType: {}", e.getMessage());
-            try {
-                if (!connection.getAutoCommit()) connection.rollback();
-            } catch (SQLException r) {
-                logger.error("Rollback failed: {}", r.getMessage());
-            }
+            logger.error("Erreur create RestaurantType", e);
             return null;
         }
     }
