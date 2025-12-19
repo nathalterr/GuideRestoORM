@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.EvaluationCriteria;
 import ch.hearc.ig.guideresto.business.Grade;
+import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -97,7 +98,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
     }
 
     @Override
-    public Set<Grade> findAll() {
+    public List<Restaurant> findAll() {
         Set<Grade> grades = new HashSet<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);

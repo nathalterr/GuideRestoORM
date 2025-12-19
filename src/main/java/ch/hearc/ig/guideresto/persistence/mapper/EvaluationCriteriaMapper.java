@@ -1,15 +1,13 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
 import ch.hearc.ig.guideresto.business.EvaluationCriteria;
+import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 
 import java.sql.*;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
@@ -80,8 +78,8 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     }
 
     @Override
-    public Set<EvaluationCriteria> findAll() {
-        Set<EvaluationCriteria> criteres = new LinkedHashSet<>();
+    public List<EvaluationCriteria> findAll() {
+        List<EvaluationCriteria> criteres = new ArrayList<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {

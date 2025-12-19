@@ -114,7 +114,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     }
 
     @Override
-    public Set<CompleteEvaluation> findAll() {
+    public List<Restaurant> findAll() {
         Set<CompleteEvaluation> evaluations = new LinkedHashSet<>();
 
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);

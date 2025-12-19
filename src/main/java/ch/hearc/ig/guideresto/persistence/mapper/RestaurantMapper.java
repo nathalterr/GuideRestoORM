@@ -128,9 +128,9 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     }
 
     @Override
-    public Set<Restaurant> findAll() {
+    public List<Restaurant> findAll() {
         identityMap.clear(); // vider le cache pour recharger depuis la DB
-        Set<Restaurant> restaurants = new LinkedHashSet<>();
+        List<Restaurant> restaurants = List.of();
 
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
              ResultSet rs = stmt.executeQuery()) {
