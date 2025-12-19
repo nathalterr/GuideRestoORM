@@ -8,6 +8,17 @@ import java.util.Date;
  * @author cedric.baudet
  */
 @Entity
+
+@NamedQuery(
+        name = "BasicEvaluation.findByLikeRestaurant",
+        query = "SELECT be FROM BasicEvaluation be WHERE be.likeRestaurant LIKE :likeRestaurant"
+)
+
+@NamedQuery(
+        name = "BasicEvaluation.findIpAddress",
+        query = "SELECT be FROM BasicEvaluation be WHERE be.ipAddress LIKE :ipAddress"
+)
+
 @Table(name="LIKES")
 public class BasicEvaluation extends Evaluation {
 

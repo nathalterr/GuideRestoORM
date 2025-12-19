@@ -8,6 +8,12 @@ import java.util.Date;
  * @author cedric.baudet
  */
 @Entity
+
+ @NamedQuery(
+         name = "Evaluation.findByVisitDate",
+         query = "SELECT e FROM Evaluation e WHERE e.visitDate LIKE :visitDate"
+ )
+
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public abstract class Evaluation implements IBusinessObject {
     @Id
