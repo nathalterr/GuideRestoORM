@@ -150,54 +150,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     }
 
     @Override
-    public Restaurant create(Restaurant restaurant) {
-        try {
-            // 🔹 Assure que le restaurant a un ID
-            if (restaurant.getId() == null) {
-                restaurant.setId(getSequenceValue()); // ta méthode qui récupère NEXTVAL
-            }
-
-            // 🔹 Vérifie que le type et la ville ont un ID valide
-            if (restaurant.getType() == null || restaurant.getType().getId() == null) {
-                throw new IllegalStateException("RestaurantType non initialisé ou sans ID");
-            }
-            if (restaurant.getAddress() == null || restaurant.getAddress().getCity() == null ||
-                    restaurant.getAddress().getCity().getId() == null) {
-                throw new IllegalStateException("City non initialisée ou sans ID");
-            }
-
-            // 🔹 Insert dans la table
-            try (PreparedStatement stmt = connection.prepareStatement(SQL_INSERT)) {
-                stmt.setInt(1, restaurant.getId());
-                stmt.setString(2, restaurant.getName());
-                stmt.setString(3, restaurant.getDescription());
-                stmt.setString(4, restaurant.getWebsite());
-                stmt.setString(5, restaurant.getAddress().getStreet());
-                stmt.setInt(6, restaurant.getType().getId());
-                stmt.setInt(7, restaurant.getAddress().getCity().getId());
-                stmt.executeUpdate();
-            }
-
-            // 🔹 Commit si nécessaire
-            if (!connection.getAutoCommit()) connection.commit();
-
-            // 🔹 Ajout au cache
-            identityMap.put(restaurant.getId(), restaurant);
-
-            return restaurant;
-
-        } catch (SQLException e) {
-            logger.error("Erreur create Restaurant: {}", e.getMessage());
-            try {
-                if (!connection.getAutoCommit()) connection.rollback();
-            } catch (SQLException ex) {
-                logger.error("Create - Rollback failed: {}", ex.getMessage());
-            }
-            return null;
-        }
-    }
-
-    @Override
     public boolean update(Restaurant restaurant) {
         try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
             stmt.setString(1, restaurant.getName());
