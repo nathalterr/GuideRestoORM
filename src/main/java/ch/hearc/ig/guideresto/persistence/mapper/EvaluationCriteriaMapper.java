@@ -17,35 +17,40 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     private static final Map<Integer, EvaluationCriteria> identityMap = new HashMap<>();
     private final Connection connection;
     private static final String SQL_FIND_BY_ID = """
-        SELECT numero, nom, description
+        
+            SELECT numero, nom, description
         FROM CRITERES_EVALUATION
         WHERE numero = ?
         """;
 
-    private static final String SQL_FIND_ALL = """
+    private static final String SQL_FIND_ALL =
+            """
         SELECT numero, nom, description
         FROM CRITERES_EVALUATION
         """;
 
-    private static final String SQL_CREATE = """
+    private static final String SQL_CREATE =
+            """
         BEGIN
             INSERT INTO CRITERES_EVALUATION (nom, description)
             VALUES (?, ?)
-            RETURNING numero INTO ?;
-        END;
-        """;
+            RETURNING numero IN
+                
+                 """;
 
-    private static final String SQL_UPDATE = """
+    private static final String SQL_UPDATE =
+            """
         UPDATE CRITERES_EVALUATION
         SET nom = ?, description = ?
-        WHERE numero = ?
-        """;
+        WHERE numer
+                 """;
 
-    private static final String SQL_FIND_BY_NAME = """
+    private static final String SQL_FIND_BY_NAME =
+            """
         SELECT numero, nom, description
         FROM CRITERES_EVALUATION
-        WHERE nom = ?
-        """;
+        WHERE no
+                 """;
 
     public EvaluationCriteriaMapper() {
         this.connection = getConnection();
@@ -84,7 +89,19 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                 .getResultList();
     }
 
+    public List<EvaluationCriteria> findByName(String name) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("EvaluationCriteria.findByName", EvaluationCriteria.class)
+                .setParameter("name", "%" + name + "%")
+                .getResultList();
+    }
 
+    public List<EvaluationCriteria> findByDescription(String description) {
+        EntityManager em = getEntityManager(),
+       return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
+            .setParameter("descripton","%" + description + "%")
+            .getResultList();
+    }
 
     @Override
     public List<EvaluationCriteria> findAll() {

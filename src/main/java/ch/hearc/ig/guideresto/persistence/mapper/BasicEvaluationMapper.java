@@ -92,6 +92,20 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         return null;
     }
 
+    public List<BasicEvaluation> findByLikeRestaurant(Boolean likeRestaurant) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("BasicEvaluation.findByLikeRestaurant", BasicEvaluation.class)
+                .setParameter("LikeRestaurant", "%" + likeRestaurant + "%")
+                .getResultList();
+    }
+
+    public List<BasicEvaluation> findByIpAddress(String ipAddress) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("BasicEvaluation.findByIpAddress", BasicEvaluation.class)
+                .setParameter("ipAddress", "%" + ipAddress + "%")
+                .getResultList();
+    }
+
     @Override
     public List<BasicEvaluation> findAll() {
         List<BasicEvaluation> evaluations = new ArrayList<>();

@@ -9,6 +9,17 @@ import java.util.Set;
  * @author cedric.baudet
  */
 @Entity
+
+@NamedQuery(
+        name = "City.findByZipCode",
+        query = "SELECT c FROM City c WHERE c.zipCode LIKE :zipCode"
+)
+
+@NamedQuery(
+        name = "City.findByCityName",
+        query = "SELECT c FROM City c WHERE c.name LIKE :name"
+)
+
 @Table(name="VILLES")
 public class City implements IBusinessObject {
     @Id

@@ -7,6 +7,12 @@ import jakarta.persistence.*;
  */
 
 @Entity
+
+@NamedQuery(
+        name = "Grade.findByGrade",
+        query = "SELECT g FROM Grade g WHERE g.grade LIKE :grade"
+)
+
 @Table(name="NOTES")
 public class Grade implements IBusinessObject {
     @Id

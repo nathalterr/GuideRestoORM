@@ -127,6 +127,34 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         return null;
     }
 
+    public List<Restaurant> findByName(String name) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
+                .setParameter("name", "%" + name + "%")
+                .getResultList();
+    }
+
+    public List<Restaurant> findByDescription(String description) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Restaurant.findByDescription", Restaurant.class)
+                .setParameter("description", "%" + description + "%")
+                .getResultList();
+    }
+
+    public List<Restaurant> findByWebsite(String website) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Restaurant.findByWebsite", Restaurant.class)
+                .setParameter("website", "%" + website + "%")
+                .getResultList();
+    }
+
+    public List<Restaurant> findByLocalisation(String street) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
+                .setParameter("street", "%" + street + "%")
+                .getResultList();
+    }
+
     @Override
     public List<Restaurant> findAll() {
         identityMap.clear(); // vider le cache pour recharger depuis la DB

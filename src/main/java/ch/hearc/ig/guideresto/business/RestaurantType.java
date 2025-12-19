@@ -10,6 +10,17 @@ import java.util.Set;
  */
 
 @Entity
+
+@NamedQuery(
+        name = "RestaurantType.findByLabel",
+        query = "SELECT rt FROM RestaurantType rt WHERE rt.label LIKE :label"
+)
+
+@NamedQuery(
+        name = "RestaurantType.findByDescription",
+        query = "SELECT rt FROM RestaurantType rt WHERE rt.description LIKE :description"
+)
+
 @Table(name="TYPES_GASTRONOMIQUES")
 public class RestaurantType implements IBusinessObject {
     @Id

@@ -10,6 +10,17 @@ import java.util.Set;
  */
 
 @Entity
+
+@NamedQuery(
+        name = "EvaluationCriteria.findByName",
+        query = "SELECT ec FROM EvaluationCriteria ec WHERE ec.name LIKE :name"
+)
+
+@NamedQuery(
+        name = "EvaluationCriteria.findByDescription",
+        query = "SELECT ec FROM EvaluationCriteria ec WHERE ec.description LIKE :description"
+)
+
 @Table(name="CRITERES_EVALUATION")
 public class EvaluationCriteria implements IBusinessObject {
     @Id

@@ -102,63 +102,18 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return null;
     }
 
-    public RestaurantType findByLabel(String label) {
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_LABEL)) {
-            stmt.setString(1, label);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-
-                    // 🔹 Vérifie le cache avant de créer un nouvel objet
-                    if (identityMap.containsKey(id)) {
-
-                        return identityMap.get(id);
-                    }
-
-                    RestaurantType type = new RestaurantType(
-                            id,
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
-
-                    identityMap.put(id, type);
-                    return type;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("findByLabel SQLException: {}", ex.getMessage());
-        }
-        return null;
+    public List<RestaurantType> findByLabel(String label) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("RestaurantType.findByLabel", RestaurantType.class)
+                .setParameter("label", "%" + label + "%")
+                .getResultList();
     }
 
-    public RestaurantType findByDescription(String description) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_DESCRIPTION)) {
-            stmt.setString(1, description);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-
-                    // 🔹 Vérifie le cache avant de créer un nouvel objet
-                    if (identityMap.containsKey(id)) {
-
-                        return identityMap.get(id);
-                    }
-
-                    RestaurantType type = new RestaurantType(
-                            id,
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
-
-                    identityMap.put(id, type);
-                    return type;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("findByLabel SQLException: {}", ex.getMessage());
-        }
-        return null;
+    public List<RestaurantType> findByDescription(String description) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("RestaurantType.findByDescription", RestaurantType.class)
+                .setParameter("description", "%" + description + "%")
+                .getResultList();
     }
 
     @Override

@@ -11,6 +11,17 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
+
+@NamedQuery(
+        name = "CompleteEvaluation.findByComment",
+        query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.comment LIKE :comment"
+)
+
+@NamedQuery(
+        name = "CompleteEvaluation.findByUsername",
+        query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.username LIKEE :username"
+)
+
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {
 

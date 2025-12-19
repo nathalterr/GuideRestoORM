@@ -97,6 +97,14 @@ public class GradeMapper extends AbstractMapper<Grade> {
         return null;
     }
 
+
+    public List<Grade> findByGrade(Integer grade) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Grade.findByGrade", Grade.class)
+                .setParameter("grade", "%" + grade + "%")
+                .getResultList();
+    }
+
     @Override
     public List<Grade> findAll() {
         List<Grade> grades = new ArrayList<>();
