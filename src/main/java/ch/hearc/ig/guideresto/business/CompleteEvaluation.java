@@ -21,6 +21,10 @@ import java.util.Set;
         name = "CompleteEvaluation.findByUsername",
         query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.username LIKE :username"
 )
+@NamedQuery(
+        name = "CompleteEvaluation.findByRestaurant",
+        query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.restaurant = :restaurant"
+)
 
 @Table(name="COMMENTAIRES")
 public class CompleteEvaluation extends Evaluation {

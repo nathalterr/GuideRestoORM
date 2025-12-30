@@ -193,21 +193,13 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         }
     }
 
-    @Override
-    public Set<BasicEvaluation> findByIpAndRest(String ip, Integer restaurantId) {
+    public List<BasicEvaluation> findByIpAndRest(String ip, Integer restaurantId) {
         EntityManager em = getEntityManager();
 
-        return em.createQuery(
-                        "SELECT be FROM basicEvaluation be" +
-                                "WHERE be.ipAddress = :ip" +
-                                "AND be.restaurant.id = :restaurantId",
-                        BasicEvaluation.class
-                )
+        return em.createNamedQuery("BasicEvaluation.findByIpAndRestaurant", BasicEvaluation.class)
                 .setParameter("ip", ip)
                 .setParameter("restaurantId", restaurantId)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
+                .getResultList();
     }
 }
 

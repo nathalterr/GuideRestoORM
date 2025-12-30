@@ -195,9 +195,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return "SELECT COUNT(*) FROM COMMENTAIRES";
     }
 
-    public Set<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
+    public List<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
         EntityManager em = getEntityManager();
-        return new HashSet<>(
+        return new ArrayList<>(
                 em.createNamedQuery(
                         "CompleteEvaluation.findByRestaurant",
                         CompleteEvaluation.class

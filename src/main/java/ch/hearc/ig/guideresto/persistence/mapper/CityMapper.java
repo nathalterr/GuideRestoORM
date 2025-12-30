@@ -76,14 +76,14 @@ public class CityMapper extends AbstractMapper<City> {
     public List<City> findByZipCode(String zipCode) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("City.findByZipCode", City.class)
-                .setParameter("zipCode" + "%" + zipCode + "%")
+                .setParameter("zipCode", "%" + zipCode + "%") // mettre les % ici
                 .getResultList();
     }
 
     public List<City> findByCityName(String cityName) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("City.findByCityName", City.class)
-                .setParameter("cityName", "%" + cityName + "%")
+                .setParameter("name", "%" + cityName + "%")
                 .getResultList();
     }
 
@@ -181,33 +181,60 @@ public class CityMapper extends AbstractMapper<City> {
         return "SELECT COUNT(*) FROM VILLES";
     }
 
-    @Override
-    public City findByName(String name) {
-        EntityManager em = getEntityManager();
+    public City findByName(String name) throws SQLException {
+        // Vérifie d'abord si la ville est dans le cache
+        for (City cachedCity : identityMap.values()) {
+            if (cachedCity.getCityName().equalsIgnoreCase(name)) {
+                return cachedCity;
+            }
+        }
 
-        return em.createQuery(
-                "SELECT c FROM City c" +
-                 "WHERE c.name = :name",
-                City.class
-        )
-                .setParameter("name", name)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
+            stmt.setString(1, name);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Integer id = rs.getInt("numero");
+
+                    // Vérifie encore le cache au cas où
+                    if (identityMap.containsKey(id)) return identityMap.get(id);
+
+                    City city = new City(
+                            id,
+                            rs.getString("code_postal"),
+                            rs.getString("nom_ville")
+                    );
+
+                    identityMap.put(id, city);
+                    return city;
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Erreur findByName City: {}", e.getMessage());
+            throw e;
+        }
+
+        return null;
     }
 
-    public City findByZipCode(String zipCode) {
-        EntityManager em = getEntityManager();
-
-        return em.createQuery(
-                "SELECT c FROM City c" +
-                        "WHERE c.zipCode = :zipCode",
-                City.class
-        )
-                .setParameter("zipCode", zipCode)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
+    public City findByZipCode(String zipCode) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ZIP_CODE)) {
+            stmt.setString(1, zipCode);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Integer id = rs.getInt("numero");
+                    if (identityMap.containsKey(id)) return identityMap.get(id);
+                    City city = new City(
+                            id,
+                            rs.getString("code_postal"),
+                            rs.getString("nom_ville")
+                    );
+                    identityMap.put(id, city);
+                    return city;
+                }
+            }
+        }
+        return null;
     }
 
     public boolean existsByName(String name) throws SQLException {
