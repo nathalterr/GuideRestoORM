@@ -16,3 +16,9 @@ BasicEvaluationMapper basicEvalMapper) {
 
 
 ![img.png](img.png)
+
+
+Chose à améliorer :
+- Recherche par nom partiel
+- Recherche par type : faire  un truc avec des chiffres comme pour les restos
+- création resto, same qu'en dessus

@@ -15,13 +15,16 @@ import java.util.Date;
 )
 
 @NamedQuery(
-        name = "BasicEvaluation.findIpAddress",
+        name = "BasicEvaluation.findByIpAddress",
         query = "SELECT be FROM BasicEvaluation be WHERE be.ipAddress LIKE :ipAddress"
+)
+@NamedQuery(
+        name = "BasicEvaluation.findByRestaurant",
+        query = "SELECT be FROM BasicEvaluation be WHERE be.restaurant = :restaurant"
 )
 
 @Table(name="LIKES")
 public class BasicEvaluation extends Evaluation {
-
     @Column
     private int id;
     @Column(name="APPRECIATION")

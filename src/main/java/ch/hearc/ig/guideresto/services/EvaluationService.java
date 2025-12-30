@@ -1,10 +1,12 @@
 package ch.hearc.ig.guideresto.services;
 
 import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.BasicEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.CompleteEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.GradeMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
+import jakarta.persistence.EntityManager;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
@@ -20,17 +22,6 @@ public class EvaluationService {
     private final GradeMapper gradeMapper  = new GradeMapper();
 
     public EvaluationService() throws SQLException {
-    }
-
-    public Integer countLikes(Restaurant restaurant, boolean like) {
-        if (restaurant == null || restaurant.getEvaluations() == null) return 0;
-        int count = 0;
-        for (Evaluation eval : restaurant.getEvaluations()) {
-            if (eval instanceof BasicEvaluation && ((BasicEvaluation) eval).getLikeRestaurant() == like) {
-                count++;
-            }
-        }
-        return count;
     }
 
     public BasicEvaluation addBasicEvaluation(Restaurant restaurant, Boolean like) {
@@ -66,18 +57,27 @@ public class EvaluationService {
         return eval;
     }
 
-    public Set<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) {
-        if (restaurant == null) return Set.of();
-        Set<BasicEvaluation> basicEvals = basicEvaluationMapper.findByRestaurant(restaurant);
-        restaurant.getEvaluations().removeIf(e -> e instanceof BasicEvaluation);
-        restaurant.getEvaluations().addAll(basicEvals);
-        return basicEvals;
+    public List<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) {
+        if (restaurant == null) return List.of();
+
+        EntityManager em = JpaUtils.getEntityManager();
+        try {
+            return em.createNamedQuery("BasicEvaluation.findByRestaurant", BasicEvaluation.class)
+                    .setParameter("restaurant", restaurant)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
     }
 
     public List<CompleteEvaluation> getCompleteEvaluations(Restaurant restaurant) {
-        List<CompleteEvaluation> completeEvalsFromDB = completeEvaluationMapper.findByRestaurant(restaurant);
-        restaurant.getEvaluations().removeIf(e -> e instanceof CompleteEvaluation);
-        restaurant.getEvaluations().addAll(completeEvalsFromDB);
-        return completeEvalsFromDB;
+        return completeEvaluationMapper.findByRestaurant(restaurant);
     }
+    public long countLikes(List<BasicEvaluation> evaluations, boolean like) {
+        return evaluations.stream()
+                .filter(be -> be.getLikeRestaurant() != null && be.getLikeRestaurant() == like)
+                .count();
+    }
+
+
 }

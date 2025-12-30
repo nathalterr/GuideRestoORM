@@ -149,17 +149,14 @@ public class Application {
         }
     }
 
-
     /**
      * Affiche la liste de tous les restaurants, sans filtre
      */
     private static void showRestaurantsList() throws SQLException{
 
         System.out.println("Liste des restaurants : ");
-
-        // ⚡ On utilise le service au lieu du mapper
-        List<Restaurant> restaurants = userService.getAllRestaurants();
-
+        RestaurantService rs = new RestaurantService();
+        List<Restaurant> restaurants = rs.getAllRestaurants();
         Restaurant restaurant = pickRestaurant(restaurants);
         if (restaurant != null) {
             showRestaurant(restaurant);
@@ -193,7 +190,6 @@ public class Application {
             e.printStackTrace();
         }
     }
-
 
     /**
      * Affiche une liste de restaurants dont le nom de la ville contient une chaîne de caractères saisie par l'utilisateur
@@ -354,20 +350,17 @@ public class Application {
                     restaurant.getAddress().getCity().getZipCode() + " " + restaurant.getAddress().getCity().getCityName());
             System.out.println();
 
+            //LIKE et DISLIKE
 
-            List<CompleteEvaluation> completeEvals = evalServ.getCompleteEvaluations(restaurant);
-            System.out.println("test");
-            // 🔹 Likes / Dislikes
-            // Récupérer BasicEvaluation depuis le service
-            userService.getBasicEvaluations(restaurant);
+            System.out.println("Chargement des likes - test");
 
-            // Maintenant countLikes donnera les vrais résultats
-            System.out.println("Likes : " + userService.countLikes(restaurant, true));
-            System.out.println("Dislikes : " + userService.countLikes(restaurant, false));
-
+            List<BasicEvaluation> basicEvals = evalServ.getBasicEvaluations(restaurant);
+            System.out.println("Likes : " + evalServ.countLikes(basicEvals, true));
+            System.out.println("Dislikes : " + evalServ.countLikes(basicEvals, false));
             System.out.println();
 
-            // Affiche-les comme tu le fais déjà
+            // Evaluation complete
+            List<CompleteEvaluation> completeEvals = evalServ.getCompleteEvaluations(restaurant);
             System.out.println("Évaluations complètes :");
             if (completeEvals.isEmpty()) {
                 System.out.println("Aucune évaluation complète pour ce restaurant.");

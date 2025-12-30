@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import org.slf4j.Logger;
@@ -95,7 +96,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     public List<BasicEvaluation> findByLikeRestaurant(Boolean likeRestaurant) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("BasicEvaluation.findByLikeRestaurant", BasicEvaluation.class)
-                .setParameter("LikeRestaurant", "%" + likeRestaurant + "%")
+                .setParameter("likeRestaurant", "%" + likeRestaurant + "%")
                 .getResultList();
     }
 
@@ -232,32 +233,19 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         return "SELECT COUNT(*) FROM LIKES";
     }
 
-    public Set<BasicEvaluation> findByRestaurant(Restaurant restaurant) {
-        Set<BasicEvaluation> evaluations = new HashSet<>();
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_RESTAURANT)) {
-            stmt.setInt(1, restaurant.getId());
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    BasicEvaluation eval = identityMap.get(id);
-                    if (eval == null) {
-                        eval = new BasicEvaluation(
-                                id,
-                                rs.getDate("date_eval"),
-                                restaurant,
-                                "Y".equalsIgnoreCase(rs.getString("appreciation")),
-                                rs.getString("adresse_ip")
-                        );
-                        identityMap.put(id, eval);
-                    }
-                    evaluations.add(eval);
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur findByRestaurant BasicEvaluation: {}", ex.getMessage());
+    public List<BasicEvaluation> findByRestaurant(Restaurant restaurant) {
+        EntityManager em = JpaUtils.getEntityManager();
+        try {
+            return new ArrayList<>(
+                    em.createNamedQuery("BasicEvaluation.findByRestaurant", BasicEvaluation.class)
+                            .setParameter("restaurant", restaurant)
+                            .getResultList()
+            );
+        } finally {
+            em.close();
         }
-        return evaluations;
     }
+
 
     public BasicEvaluation findByIpAndRest(String ip, Integer restaurantId) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_IP_AND_RESTAURANT)) {

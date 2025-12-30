@@ -23,8 +23,8 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     private static final Logger logger = LoggerFactory.getLogger(RestaurantMapper.class);
     private final Connection connection;
     private static final Map<Integer, Restaurant> identityMap = new HashMap<>();
-    private CityMapper cityMapper;
-    public RestaurantTypeMapper typeMapper;
+    private CityMapper cityMapper = new CityMapper();
+    public RestaurantTypeMapper typeMapper = new  RestaurantTypeMapper();
 
     private static final String SQL_FIND_BY_ID = """
         SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill

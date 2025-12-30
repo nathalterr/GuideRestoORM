@@ -217,13 +217,12 @@ public class UserService {
         }
         return city;
     }
-    public Set<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) throws SQLException {
-        if (restaurant == null) return Set.of();
-
-        // Suppose que BasicEvaluationMapper a une méthode findByRestaurant
-        Set<BasicEvaluation> basicEvals = new BasicEvaluationMapper().findByRestaurant(restaurant);
-
-        // Ajoute au restaurant pour que countLikes fonctionne
+    public List<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) throws SQLException {
+        if (restaurant == null) return Collections.emptyList();
+        List<BasicEvaluation> basicEvals = new BasicEvaluationMapper().findByRestaurant(restaurant);
+        if (restaurant.getEvaluations() == null) {
+            restaurant.setEvaluations(new HashSet<>());
+        }
         restaurant.getEvaluations().removeIf(e -> e instanceof BasicEvaluation);
         restaurant.getEvaluations().addAll(basicEvals);
 
