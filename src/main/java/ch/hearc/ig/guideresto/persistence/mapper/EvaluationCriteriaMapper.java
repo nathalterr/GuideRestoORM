@@ -135,22 +135,19 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
 
     @Override
     public boolean update(EvaluationCriteria critere) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setString(1, critere.getName());
-            stmt.setString(2, critere.getDescription());
-            stmt.setInt(3, critere.getId());
-            int rows = stmt.executeUpdate();
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            if (!connection.getAutoCommit()) connection.commit();
-
-            if (rows > 0) {
-                // ✅ Met à jour le cache
-                identityMap.put(critere.getId(), critere);
+        try {
+            tx.begin();
+            em.merge(critere);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            return rows > 0;
-        } catch (SQLException e) {
-            logger.error("Erreur lors de la mise à jour : {}", e.getMessage());
+            logger.error("Erreur update evaluationCriteria", e);
             return false;
         }
     }

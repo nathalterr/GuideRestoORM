@@ -18,44 +18,47 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     private static final Map<Integer, CompleteEvaluation> identityMap = new HashMap<>();
     private final Connection connection;
     private RestaurantMapper restaurantMapper;
-    private GradeMapper gradeMapper ;
+    private GradeMapper gradeMapper;
 
     private static final String SQL_FIND_BY_ID = """
-        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
-        FROM COMMENTAIRES
-        WHERE numero = ?
-        """;
+            SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
+            FROM COMMENTAIRES
+            WHERE numero = ?
+            """;
 
     private static final String SQL_FIND_ALL = """
-        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
-        FROM COMMENTAIRES
-        """;
+            SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
+            FROM COMMENTAIRES
+            """;
 
     private static final String SQL_CREATE = """
-        BEGIN
-            INSERT INTO COMMENTAIRES (date_eval, commentaire, nom_utilisateur, fk_rest)
-            VALUES (?, ?, ?, ?)
-            RETURNING numero INTO ?;
-        END;
-        """;
+            BEGIN
+                INSERT INTO COMMENTAIRES (date_eval, commentaire, nom_utilisateur, fk_rest)
+                VALUES (?, ?, ?, ?)
+                RETURNING numero INTO ?;
+            END;
+            """;
 
-    private static final String SQL_UPDATE = """
+    private static final String SQL_UPDATE =
+            """
         UPDATE COMMENTAIRES
-        SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest = ?
-        WHERE numero = ?
-        """;
+        SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest
+                WHERE numero
+                """;
 
-    private static final String SQL_FIND_BY_RESTAURANT = """
+    private static final String SQL_FIND_BY_RESTAURANT =
+            """
         SELECT numero, date_eval, commentaire, nom_utilisateur
         FROM COMMENTAIRES
-        WHERE fk_rest = ?
-        """;
+        WHERE fk_rest
+                """;
 
-    private static final String SQL_FIND_BY_USER_AND_RESTAURANT = """
+    private static final String SQL_FIND_BY_USER_AND_RESTAURANT =
+            """
         SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
         FROM COMMENTAIRES
-        WHERE nom_utilisateur = ? AND fk_rest = ?
-        """;
+        WHERE nom_utilisateur = ? AND fk_rest
+                """;
 
     public CompleteEvaluationMapper() throws SQLException {
         this.connection = getConnection();
@@ -64,6 +67,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     public CompleteEvaluationMapper(RestaurantMapper rm) throws SQLException {
         this.connection = getConnection();
         this.restaurantMapper = rm;
+        this.gradeMapper = new GradeMapper();
     }
 
     public CompleteEvaluationMapper(RestaurantMapper restaurantMapper, GradeMapper gradeMapper) throws SQLException {
@@ -77,46 +81,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         this.gradeMapper = gradeMapper;
     }
 
-    @Override
     public CompleteEvaluation findById(Integer id) {
-        // ✅ Vérifie d'abord le cache
-        if (identityMap.containsKey(id)) {
-            System.out.println("⚡ Évaluation " + id + " récupérée depuis l'Identity Map");
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Restaurant restaurant = restaurantMapper.findById(rs.getInt("fk_rest"));
-                    CompleteEvaluation eval = new CompleteEvaluation(
-                            rs.getInt("numero"),
-                            rs.getDate("date_eval"),
-                            restaurant,
-                            rs.getString("commentaire"),
-                            rs.getString("nom_utilisateur")
-                    );
-
-                    // Ajout au cache
-                    identityMap.put(eval.getId(), eval);
-
-                    // 🔹 Charge aussi les notes associées
-
-                    if (eval.getId() != null && eval.getId() > 0 && eval.getGrades().isEmpty()) {
-                        GradeMapper gradeMapper = new GradeMapper();
-                        eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
-                    } else {
-                        logger.warn("CompleteEvaluation avec ID nul ou 0, skip grades: {}", eval);
-                    }
-
-                    return eval;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findById : {}", e.getMessage());
-        }
-        return null;
+        EntityManager em = getEntityManager();
+        return em.find(CompleteEvaluation.class, id);
     }
 
     public List<CompleteEvaluation> findByComment(String comment) {
@@ -135,108 +102,47 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public List<CompleteEvaluation> findAll() {
-        List<CompleteEvaluation> evaluations = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-                CompleteEvaluation eval = identityMap.get(id);
-
-                if (eval == null) {
-                    Restaurant restaurant = restaurantMapper.findById(rs.getInt("fk_rest"));
-                    eval = new CompleteEvaluation(
-                            id,
-                            rs.getDate("date_eval"),
-                            restaurant,
-                            rs.getString("commentaire"),
-                            rs.getString("nom_utilisateur")
-                    );
-                    identityMap.put(id, eval);
-                }
-
-                // 🔹 Lazy-load des notes seulement si besoin
-                if (eval.getGrades().isEmpty()) {
-                    if (eval.getId() != null && eval.getId() > 0 && eval.getGrades().isEmpty()) {
-                        GradeMapper gradeMapper = new GradeMapper();
-                        eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
-                    } else {
-                        logger.warn("CompleteEvaluation avec ID nul ou 0, skip grades: {}", eval);
-                    }
-                }
-
-                evaluations.add(eval);
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findAll : {}", e.getMessage());
-        }
-        return evaluations;
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT ce FROM CompleteEvaluation ce",
+                CompleteEvaluation.class
+        ).getResultList();
     }
 
     @Override
-    public CompleteEvaluation create(CompleteEvaluation evaluation) {
-        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
+    public CompleteEvaluation create(CompleteEvaluation completeEvaluation) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            stmt.setDate(1, new java.sql.Date(evaluation.getVisitDate().getTime()));
-            stmt.setString(2, evaluation.getComment());
-            stmt.setString(3, evaluation.getUsername());
-            stmt.setInt(4, evaluation.getRestaurant().getId());
-            stmt.registerOutParameter(5, Types.INTEGER);
-
-            stmt.executeUpdate();
-
-            Integer generatedId = stmt.getInt(5);
-            evaluation.setId(generatedId);
-
-            // ✅ Ajout dans le cache
-            identityMap.put(generatedId, evaluation);
-
-            if (!connection.getAutoCommit()) connection.commit();
-
-            return evaluation;
-
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1) {
-                try {
-                    return findByUserAndRest(evaluation.getUsername(), evaluation.getRestaurant().getId());
-                } catch (SQLException ex) {
-                    logger.error("Erreur findByUserAndRest après doublon: {}", ex.getMessage());
-                }
-            } else {
-                logger.error("Erreur create CompleteEvaluation: {}", e.getMessage());
+        try {
+            tx.begin();
+            em.persist(completeEvaluation);
+            tx.commit();
+            return completeEvaluation;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            try {
-                connection.rollback();
-            } catch (SQLException r) {
-                logger.error("Rollback failed: {}", r.getMessage());
-            }
-
+            logger.error("Erreur create CompleteEvaluation", e);
             return null;
         }
     }
 
     @Override
     public boolean update(CompleteEvaluation evaluation) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setDate(1, new java.sql.Date(evaluation.getVisitDate().getTime()));
-            stmt.setString(2, evaluation.getComment());
-            stmt.setString(3, evaluation.getUsername());
-            stmt.setInt(4, evaluation.getRestaurant().getId());
-            stmt.setInt(5, evaluation.getId());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            int rows = stmt.executeUpdate();
-
-            if (!connection.getAutoCommit()) connection.commit();
-
-            if (rows > 0) {
-                // ✅ Mise à jour du cache
-                identityMap.put(evaluation.getId(), evaluation);
+        try {
+            tx.begin();
+            em.merge(evaluation);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            return rows > 0;
-        } catch (SQLException e) {
-            logger.error("Erreur update CompleteEvaluation : {}", e.getMessage());
+            logger.error("Erreur update CompleteEvaluation", e);
             return false;
         }
     }
@@ -289,76 +195,32 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return "SELECT COUNT(*) FROM COMMENTAIRES";
     }
 
-    public List<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
-        List<CompleteEvaluation> evaluations = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_RESTAURANT)) {
-            stmt.setInt(1, restaurant.getId());
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    CompleteEvaluation eval = identityMap.get(id);
-
-                    if (eval == null) {
-                        eval = new CompleteEvaluation(
-                                id,
-                                rs.getDate("date_eval"),
-                                restaurant,
-                                rs.getString("commentaire"),
-                                rs.getString("nom_utilisateur")
-                        );
-                        identityMap.put(id, eval);
-                    }
-
-                    if (eval.getGrades().isEmpty()) {
-                        GradeMapper gradeMapper = new GradeMapper();
-                        if (eval.getId() != null && eval.getId() > 0 && eval.getGrades().isEmpty()) {
-                            eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
-                        } else {
-                            logger.warn("CompleteEvaluation avec ID nul ou 0, skip grades: {}", eval);
-                        }
-                    }
-
-                    evaluations.add(eval);
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur findByRestaurant CompleteEvaluation : {}", ex.getMessage());
-        }
-
-        return evaluations;
+    public Set<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
+        EntityManager em = getEntityManager();
+        return new HashSet<>(
+                em.createNamedQuery(
+                        "CompleteEvaluation.findByRestaurant",
+                        CompleteEvaluation.class
+                )
+                        .setParameter("restaurant", restaurant)
+                        .getResultList()
+        );
     }
 
     public CompleteEvaluation findByUserAndRest(String username, Integer restaurantId) throws SQLException {
-        for (CompleteEvaluation eval : identityMap.values()) {
-            if (eval.getUsername().equalsIgnoreCase(username)
-                    && eval.getRestaurant() != null
-                    && Objects.equals(eval.getRestaurant().getId(), restaurantId)) {
-                System.out.println("⚡ Évaluation trouvée dans le cache pour " + username);
-                return eval;
-            }
-        }
+        EntityManager em = getEntityManager();
 
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_USER_AND_RESTAURANT)) {
-            stmt.setString(1, username);
-            stmt.setInt(2, restaurantId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Restaurant rest = restaurantMapper.findById(restaurantId);
-                    CompleteEvaluation eval = new CompleteEvaluation(
-                            rs.getInt("numero"),
-                            rs.getDate("date_eval"),
-                            rest,
-                            rs.getString("commentaire"),
-                            rs.getString("nom_utilisateur")
-                    );
-
-                    identityMap.put(eval.getId(), eval);
-                    return eval;
-                }
-            }
-        }
-        return null;
+        return em.createQuery(
+                "SELECT c FROM commentaires c" +
+                        "WHERE c.nom_utilisateur = :username" +
+                        "AND c.fk_rest = :restaurantid",
+                        CompleteEvaluation.class
+        )
+                .setParameter("username", username)
+                .setParameter("restaurantId", restaurantId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 }
 

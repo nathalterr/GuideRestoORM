@@ -69,37 +69,14 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public City findById(Integer id) {
-        // Vérifie le cache d'abord
-        if (identityMap.containsKey(id)) {
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    City city = new City(
-                            id,
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-
-                    identityMap.put(id, city);
-                    return city;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur findById City: {}", e.getMessage());
-        }
-
-        return null;
+        EntityManager em = getEntityManager();
+        return em.find(City.class, id);
     }
 
     public List<City> findByZipCode(String zipCode) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("City.findByZipCode", City.class)
-                .setParameter("zipCode", "%" + zipCode + "%")
+                .setParameter("zipCode" + "%" + zipCode + "%")
                 .getResultList();
     }
 
@@ -112,73 +89,47 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public List<City> findAll() {
-        List<City> cities = new ArrayList<>();
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-                City city = identityMap.get(id);
-                if (city == null) {
-                    city = new City(
-                            id,
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-                    identityMap.put(id, city);
-                }
-                cities.add(city);
-            }
-        } catch (SQLException e) {
-            logger.error("findAll SQLException: {}", e.getMessage());
-        }
-        return cities;
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT c FROM City c",
+                City.class
+        ).getResultList();
     }
 
     @Override
     public City create(City city) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-        try (CallableStatement stmt = connection.prepareCall(SQL_CREATE)) {
-            stmt.setString(1, city.getZipCode());
-            stmt.setString(2, city.getCityName());
-            stmt.registerOutParameter(3, Types.INTEGER);
-
-            stmt.executeUpdate();
-            Integer generatedId = stmt.getInt(3);
-            city.setId(generatedId);
-            identityMap.put(generatedId, city);
-
-            if (!connection.getAutoCommit()) connection.commit();
+        try{
+            tx.begin();
+            em.persist(city);
+            tx.commit();
             return city;
-
-        } catch (SQLException e) {
-            if (e.getErrorCode() == 1) { // doublon
-                try {
-                    return findByName(city.getCityName());
-                } catch (SQLException ex) {
-                    logger.error("Erreur findByName après doublon: {}", ex.getMessage());
-                }
-            } else {
-                logger.error("Erreur create City: {}", e.getMessage());
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-            try { connection.rollback(); } catch (SQLException r) {
-                logger.error("Rollback failed: {}", r.getMessage());
-            }
+            logger.error("Erreur create City", e);
             return null;
         }
     }
 
     @Override
     public boolean update(City city) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setString(1, city.getZipCode());
-            stmt.setString(2, city.getCityName());
-            stmt.setInt(3, city.getId());
-            int updated = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-            if (updated > 0) identityMap.put(city.getId(), city);
-            return updated > 0;
-        } catch (SQLException e) {
-            logger.error("update SQLException: {}", e.getMessage());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+            em.merge(city);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Erreur update City", e);
             return false;
         }
     }
@@ -263,6 +214,26 @@ public class CityMapper extends AbstractMapper<City> {
             throw e;
         }
 
+        return null;
+    }
+
+    public City findByZipCode(String zipCode) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ZIP_CODE)) {
+            stmt.setString(1, zipCode);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    Integer id = rs.getInt("numero");
+                    if (identityMap.containsKey(id)) return identityMap.get(id);
+                    City city = new City(
+                            id,
+                            rs.getString("code_postal"),
+                            rs.getString("nom_ville")
+                    );
+                    identityMap.put(id, city);
+                    return city;
+                }
+            }
+        }
         return null;
     }
 
