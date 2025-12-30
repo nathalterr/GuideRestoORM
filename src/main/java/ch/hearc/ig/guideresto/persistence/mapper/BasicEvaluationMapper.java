@@ -87,7 +87,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     public List<BasicEvaluation> findAll() {
         EntityManager em = getEntityManager();
         return em.createQuery(
-                "SELECT be FROM BasicEvaluation, be",
+                "SELECT l FROM likes, l",
                 BasicEvaluation.class
         ).getResultList();
     }
@@ -113,21 +113,19 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
 
     @Override
     public boolean update(BasicEvaluation eval) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setDate(1, new java.sql.Date(eval.getVisitDate().getTime()));
-            stmt.setString(2, eval.getLikeRestaurant() != null && eval.getLikeRestaurant() ? "Y" : "N");
-            stmt.setString(3, eval.getIpAddress());
-            stmt.setInt(4, eval.getRestaurant().getId());
-            stmt.setInt(5, eval.getId());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            int rows = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-            if (rows > 0) identityMap.put(eval.getId(), eval);
-            return rows > 0;
-
-        } catch (SQLException ex) {
-            logger.error("SQLException in update: {}", ex.getMessage());
-            try { if (!connection.getAutoCommit()) connection.rollback(); } catch (SQLException r) { logger.error("Rollback failed: {}", r.getMessage()); }
+        try {
+            tx.begin();
+            em.merge(eval);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Erreur update BasicEvaluation", e);
             return false;
         }
     }
@@ -180,54 +178,34 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         return "SELECT COUNT(*) FROM LIKES";
     }
 
+    @Override
     public Set<BasicEvaluation> findByRestaurant(Restaurant restaurant) {
-        Set<BasicEvaluation> evaluations = new HashSet<>();
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_RESTAURANT)) {
-            stmt.setInt(1, restaurant.getId());
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    BasicEvaluation eval = identityMap.get(id);
-                    if (eval == null) {
-                        eval = new BasicEvaluation(
-                                id,
-                                rs.getDate("date_eval"),
-                                restaurant,
-                                "Y".equalsIgnoreCase(rs.getString("appreciation")),
-                                rs.getString("adresse_ip")
-                        );
-                        identityMap.put(id, eval);
-                    }
-                    evaluations.add(eval);
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur findByRestaurant BasicEvaluation: {}", ex.getMessage());
-        }
-        return evaluations;
+        EntityManager em = getEntityManager();
+        return new HashSet<>(
+                em.createQuery(
+                        "SELECT l FROM likes l WHERE l.fk_rest = :restaurant",
+                        BasicEvaluation.class
+                )
+                        .setParameter("restaurant", restaurant)
+                        .getResultList()
+        );
     }
 
-    public BasicEvaluation findByIpAndRest(String ip, Integer restaurantId) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_IP_AND_RESTAURANT)) {
-            stmt.setString(1, ip);
-            stmt.setInt(2, restaurantId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    if (identityMap.containsKey(id)) return identityMap.get(id);
+    @Override
+    public Set<BasicEvaluation> findByIpAndRest(String ip, Integer restaurantId) {
+        EntityManager em = getEntityManager();
 
-                    BasicEvaluation eval = new BasicEvaluation();
-                    eval.setId(id);
-                    eval.setVisitDate(rs.getDate("date_eval"));
-                    eval.setLikeRestaurant("Y".equalsIgnoreCase(rs.getString("appreciation")));
-                    eval.setIpAddress(rs.getString("adresse_ip"));
-                    eval.setRestaurant(restaurantMapper.findById(rs.getInt("fk_rest")));
-                    identityMap.put(id, eval);
-                    return eval;
-                }
-            }
-        }
-        return null;
+        return em.createQuery(
+                "SELECT l FROM likes l" +
+                "WHERE l.ipAddress = :ip" +
+                "AND l.restaurant.id = :restaurantId",
+                BasicEvaluation.class
+        )
+                .setParameter("ip", ip)
+                .setParameter("restaurantId", restaurantId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 }
 

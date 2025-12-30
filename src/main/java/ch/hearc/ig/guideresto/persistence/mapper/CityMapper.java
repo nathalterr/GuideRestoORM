@@ -116,16 +116,19 @@ public class CityMapper extends AbstractMapper<City> {
 
     @Override
     public boolean update(City city) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setString(1, city.getZipCode());
-            stmt.setString(2, city.getCityName());
-            stmt.setInt(3, city.getId());
-            int updated = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-            if (updated > 0) identityMap.put(city.getId(), city);
-            return updated > 0;
-        } catch (SQLException e) {
-            logger.error("update SQLException: {}", e.getMessage());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+            em.merge(city);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Erreur update City", e);
             return false;
         }
     }
@@ -175,62 +178,6 @@ public class CityMapper extends AbstractMapper<City> {
     @Override
     protected String getCountQuery() {
         return "SELECT COUNT(*) FROM VILLES";
-    }
-
-    public City findByName(String name) throws SQLException {
-        // Vérifie d'abord si la ville est dans le cache
-        for (City cachedCity : identityMap.values()) {
-            if (cachedCity.getCityName().equalsIgnoreCase(name)) {
-                return cachedCity;
-            }
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
-            stmt.setString(1, name);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-
-                    // Vérifie encore le cache au cas où
-                    if (identityMap.containsKey(id)) return identityMap.get(id);
-
-                    City city = new City(
-                            id,
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-
-                    identityMap.put(id, city);
-                    return city;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur findByName City: {}", e.getMessage());
-            throw e;
-        }
-
-        return null;
-    }
-
-    public City findByZipCode(String zipCode) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ZIP_CODE)) {
-            stmt.setString(1, zipCode);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    if (identityMap.containsKey(id)) return identityMap.get(id);
-                    City city = new City(
-                            id,
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-                    identityMap.put(id, city);
-                    return city;
-                }
-            }
-        }
-        return null;
     }
 
     public boolean existsByName(String name) throws SQLException {

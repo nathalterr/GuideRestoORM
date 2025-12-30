@@ -20,41 +20,44 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     private GradeMapper gradeMapper;
 
     private static final String SQL_FIND_BY_ID = """
-        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
-        FROM COMMENTAIRES
-        WHERE numero = ?
-        """;
+            SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
+            FROM COMMENTAIRES
+            WHERE numero = ?
+            """;
 
     private static final String SQL_FIND_ALL = """
-        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
-        FROM COMMENTAIRES
-        """;
+            SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
+            FROM COMMENTAIRES
+            """;
 
     private static final String SQL_CREATE = """
-        BEGIN
-            INSERT INTO COMMENTAIRES (date_eval, commentaire, nom_utilisateur, fk_rest)
-            VALUES (?, ?, ?, ?)
-            RETURNING numero INTO ?;
-        END;
-        """;
+            BEGIN
+                INSERT INTO COMMENTAIRES (date_eval, commentaire, nom_utilisateur, fk_rest)
+                VALUES (?, ?, ?, ?)
+                RETURNING numero INTO ?;
+            END;
+            """;
 
-    private static final String SQL_UPDATE = """
+    private static final String SQL_UPDATE =
+            """
         UPDATE COMMENTAIRES
-        SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest = ?
-        WHERE numero = ?
-        """;
+        SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest
+                WHERE numero
+                """;
 
-    private static final String SQL_FIND_BY_RESTAURANT = """
+    private static final String SQL_FIND_BY_RESTAURANT =
+            """
         SELECT numero, date_eval, commentaire, nom_utilisateur
         FROM COMMENTAIRES
-        WHERE fk_rest = ?
-        """;
+        WHERE fk_rest
+                """;
 
-    private static final String SQL_FIND_BY_USER_AND_RESTAURANT = """
+    private static final String SQL_FIND_BY_USER_AND_RESTAURANT =
+            """
         SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
         FROM COMMENTAIRES
-        WHERE nom_utilisateur = ? AND fk_rest = ?
-        """;
+        WHERE nom_utilisateur = ? AND fk_rest
+                """;
 
     public CompleteEvaluationMapper() {
         this.connection = getConnection();
@@ -126,25 +129,19 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
 
     @Override
     public boolean update(CompleteEvaluation evaluation) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setDate(1, new java.sql.Date(evaluation.getVisitDate().getTime()));
-            stmt.setString(2, evaluation.getComment());
-            stmt.setString(3, evaluation.getUsername());
-            stmt.setInt(4, evaluation.getRestaurant().getId());
-            stmt.setInt(5, evaluation.getId());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            int rows = stmt.executeUpdate();
-
-            if (!connection.getAutoCommit()) connection.commit();
-
-            if (rows > 0) {
-                // ✅ Mise à jour du cache
-                identityMap.put(evaluation.getId(), evaluation);
+        try {
+            tx.begin();
+            em.merge(evaluation);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            return rows > 0;
-        } catch (SQLException e) {
-            logger.error("Erreur update CompleteEvaluation : {}", e.getMessage());
+            logger.error("Erreur update CompleteEvaluation", e);
             return false;
         }
     }
@@ -198,70 +195,31 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     }
 
     public Set<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
-        Set<CompleteEvaluation> evaluations = new LinkedHashSet<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_RESTAURANT)) {
-            stmt.setInt(1, restaurant.getId());
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    CompleteEvaluation eval = identityMap.get(id);
-
-                    if (eval == null) {
-                        eval = new CompleteEvaluation(
-                                id,
-                                rs.getDate("date_eval"),
-                                restaurant,
-                                rs.getString("commentaire"),
-                                rs.getString("nom_utilisateur")
-                        );
-                        identityMap.put(id, eval);
-                    }
-
-                    if (eval.getGrades().isEmpty()) {
-                        eval.getGrades().addAll(gradeMapper.findByEvaluation(eval));
-                    }
-
-                    evaluations.add(eval);
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("Erreur findByRestaurant CompleteEvaluation : {}", ex.getMessage());
-        }
-
-        return evaluations;
+        EntityManager em = getEntityManager();
+        return new HashSet<>(
+                em.createNamedQuery(
+                        "CompleteEvaluation.findByRestaurant",
+                        CompleteEvaluation.class
+                )
+                        .setParameter("restaurant", restaurant)
+                        .getResultList()
+        );
     }
 
     public CompleteEvaluation findByUserAndRest(String username, Integer restaurantId) throws SQLException {
-        for (CompleteEvaluation eval : identityMap.values()) {
-            if (eval.getUsername().equalsIgnoreCase(username)
-                    && eval.getRestaurant() != null
-                    && Objects.equals(eval.getRestaurant().getId(), restaurantId)) {
-                System.out.println("⚡ Évaluation trouvée dans le cache pour " + username);
-                return eval;
-            }
-        }
+        EntityManager em = getEntityManager();
 
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_USER_AND_RESTAURANT)) {
-            stmt.setString(1, username);
-            stmt.setInt(2, restaurantId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Restaurant rest = restaurantMapper.findById(restaurantId);
-                    CompleteEvaluation eval = new CompleteEvaluation(
-                            rs.getInt("numero"),
-                            rs.getDate("date_eval"),
-                            rest,
-                            rs.getString("commentaire"),
-                            rs.getString("nom_utilisateur")
-                    );
-
-                    identityMap.put(eval.getId(), eval);
-                    return eval;
-                }
-            }
-        }
-        return null;
+        return em.createQuery(
+                "SELECT c FROM commentaires c" +
+                        "WHERE c.nom_utilisateur = :username" +
+                        "AND c.fk_rest = :restaurantid",
+                        CompleteEvaluation.class
+        )
+                .setParameter("username", username)
+                .setParameter("restaurantId", restaurantId)
+                .getResultStream()
+                .findFirst()
+                .orElse(null);
     }
 }
 

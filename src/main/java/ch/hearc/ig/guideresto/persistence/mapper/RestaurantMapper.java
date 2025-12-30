@@ -151,27 +151,20 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     @Override
     public boolean update(Restaurant restaurant) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setString(1, restaurant.getName());
-            stmt.setString(2, restaurant.getDescription());
-            stmt.setString(3, restaurant.getWebsite());
-            stmt.setInt(4, restaurant.getType().getId());
-            stmt.setInt(5, restaurant.getId());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            updateAddress(restaurant, restaurant.getAddress().getStreet(), restaurant.getAddress().getCity());
-
-            int rows = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-
-            identityMap.put(restaurant.getId(), restaurant);
-            return rows > 0;
-
-        } catch (SQLException e) {
-            logger.error("Erreur update Restaurant: {}", e.getMessage());
-            try { if (!connection.getAutoCommit()) connection.rollback(); } catch (SQLException ex) { logger.error("Update - Rollback failed: {}", ex.getMessage()); }
+        try {
+            tx.begin();
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            logger.error("Erreur update Restaurant", e);
             return false;
         }
-    }
 
     @Override
     public boolean delete(Restaurant restaurant) {
@@ -255,92 +248,50 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     public void clearCache() {
         identityMap.clear();
     }
+
     /**
      * Retourne tous les restaurants situés dans une ville donnée
      */
-    public Set<Restaurant> findByCity(String cityName) throws SQLException {
-        Set<Restaurant> restaurants = new HashSet<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_CITY)) {
-            stmt.setString(1, cityName);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    Restaurant restaurant = identityMap.get(id);
-
-                    if (restaurant == null) {
-                        RestaurantType type = new RestaurantTypeMapper().findById(rs.getInt("fk_type"));
-                        City city = new CityMapper().findById(rs.getInt("fk_vill"));
-                        restaurant = new Restaurant(
-                                id,
-                                rs.getString("nom"),
-                                rs.getString("description"),
-                                rs.getString("site_web"),
-                                rs.getString("adresse"),
-                                city,
-                                type
-                        );
-                        identityMap.put(id, restaurant);
-                    }
-
-                    restaurants.add(restaurant);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur findByCity Restaurant: {}", e.getMessage());
-            throw e;
+    @Override
+    public Set<Restaurant> findByCity(String cityName) {
+        EntityManager em = getEntityManager();
+        return new HashSet<>(
+                em.createNamedQuery(
+                        "Restaurant.findByCity",
+                        Restaurant.class
+                )
+                        .setParameter("cityName", cityName)
+                        .getResultList()
+        );
         }
-
-        return restaurants;
-    }
 
     /**
      * Retourne tous les restaurants d'un type donné
      */
-    public Set<Restaurant> findByRestaurantType(String typeLabel) throws SQLException {
-        Set<Restaurant> restaurants = new HashSet<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_TYPE)) {
-            stmt.setString(1, typeLabel);
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    Restaurant restaurant = identityMap.get(id);
-
-                    if (restaurant == null) {
-                        RestaurantType type = new RestaurantTypeMapper().findById(rs.getInt("fk_type"));
-                        City city = new CityMapper().findById(rs.getInt("fk_vill"));
-                        restaurant = new Restaurant(
-                                id,
-                                rs.getString("nom"),
-                                rs.getString("description"),
-                                rs.getString("site_web"),
-                                rs.getString("adresse"),
-                                city,
-                                type
-                        );
-                        identityMap.put(id, restaurant);
-                    }
-
-                    restaurants.add(restaurant);
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur findByRestaurantType Restaurant: {}", e.getMessage());
-            throw e;
-        }
-
-        return restaurants;
-    }
-
-    public List<Restaurant> findByName(String name) {
+    @Override
+    public Set<Restaurant> findByRestaurantType(String label) {
         EntityManager em = getEntityManager();
-        //Retour d'une liste de restaurant avec le nom en paramètre
-        return  em.createNamedQuery("Restaurant.findByName", Restaurant.class)
-                .setParameter("name", "%" + name + "%")
-                .getResultList();
+        return new HashSet<>(
+                em.createNamedQuery(
+                        "Restaurant.findByRestaurantType",
+                        Restaurant.class
+                )
+                        .setParameter("label", label)
+                        .getResultList()
+        );
     }
 
-
+    @Override
+    public Set<Restaurant> findByName(String name) {
+        EntityManager em = getEntityManager();
+        return new HashSet<>(
+                em.createNamedQuery(
+                    "Restaurant.findByName",
+                    Restaurant.class
+        )
+                .setParameter("name"), name)
+                .getResultList()
+            );
+        }
 }
 

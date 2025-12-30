@@ -107,23 +107,19 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     @Override
     public boolean update(Grade grade) {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setInt(1, grade.getGrade());
-            stmt.setInt(2, grade.getEvaluation().getId());
-            stmt.setInt(3, grade.getCriteria().getId());
-            stmt.setInt(4, grade.getId());
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            int updated = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
-
-            // ✅ Synchroniser le cache
-            if (updated > 0) {
-                identityMap.put(grade.getId(), grade);
+        try {
+            tx.begin();
+            em.merge(grade);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            return updated > 0;
-        } catch (SQLException ex) {
-            System.err.println("Erreur update Grade : " + ex.getMessage());
+            logger.error("Erreur update Grade", e);
             return false;
         }
     }
@@ -172,6 +168,20 @@ public class GradeMapper extends AbstractMapper<Grade> {
     @Override
     protected String getCountQuery() {
         return "SELECT COUNT(*) FROM NOTES";
+    }
+
+    @Override
+    public Set<Grade> findByCompleteEvaluation(CompleteEvaluation completeEvaluation) {
+        EntityManager em = getEntityManager();
+        return new HashSet<>(
+                em.createNamedQuery(
+                        "Grade.findByCompleteEvaluation",
+                        Grade.class
+                )
+                        .setParameter("completeEvaluation", completeEvaluation)
+                        .getResultList()
+        );
+
     }
 
     // 🔹 Utilitaires avec cache aussi

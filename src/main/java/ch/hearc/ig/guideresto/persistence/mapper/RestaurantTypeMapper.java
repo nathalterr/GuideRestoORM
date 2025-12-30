@@ -122,20 +122,19 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     @Override
     public boolean update(RestaurantType object) {
-                try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE)) {
-            stmt.setString(1, object.getLabel());
-            stmt.setString(2, object.getDescription());
-            stmt.setInt(3, object.getId());
-            int affected = stmt.executeUpdate();
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-            if (affected > 0) {
-                identityMap.put(object.getId(), object); // 🔹 Mise à jour du cache
+        try {
+            tx.begin();
+            em.merge(object);
+            tx.commit();
+            return true;
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
             }
-
-            if (!connection.getAutoCommit()) connection.commit();
-            return affected > 0;
-        } catch (SQLException ex) {
-            logger.error("update SQLException: {}", ex.getMessage());
+            logger.error("Erreur update RestaurantType", e);
             return false;
         }
     }
@@ -187,32 +186,17 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return "SELECT COUNT(*) FROM TYPES_GASTRONOMIQUES";
     }
 
-    public RestaurantType findByName(String name) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
-            stmt.setString(1, name);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-
-                    if (identityMap.containsKey(id)) {
-                        return identityMap.get(id);
-                    }
-
-                    RestaurantType type = new RestaurantType(
-                            id,
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
-
-                    identityMap.put(id, type);
-                    return type;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("findByName SQLException: {}", ex.getMessage());
-            throw ex;
-        }
-        return null;
+    @Override
+    public Set<RestaurantType> findByName(String name) {
+        EntityManager em = getEntityManager();
+        return new HashSet<>(
+                em.createQuery(
+                        "SELECT rt FROM RestaurantType rt WHERE rt.name = :name",
+                        RestaurantType.class
+                )
+                        .setParameter("name", name)
+                        .getResultList()
+        );
     }
 
     public boolean existsByName(String name) throws SQLException {
