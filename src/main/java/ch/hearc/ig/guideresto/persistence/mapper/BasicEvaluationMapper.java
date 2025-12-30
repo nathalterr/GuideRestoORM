@@ -89,7 +89,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     public List<BasicEvaluation> findAll() {
         EntityManager em = getEntityManager();
         return em.createQuery(
-                "SELECT l FROM likes, l",
+                "SELECT be FROM BasicEvaluation be",
                 BasicEvaluation.class
         ).getResultList();
     }
@@ -198,9 +198,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         EntityManager em = getEntityManager();
 
         return em.createQuery(
-                        "SELECT l FROM likes l" +
-                                "WHERE l.ipAddress = :ip" +
-                                "AND l.restaurant.id = :restaurantId",
+                        "SELECT be FROM basicEvaluation be" +
+                                "WHERE be.ipAddress = :ip" +
+                                "AND be.restaurant.id = :restaurantId",
                         BasicEvaluation.class
                 )
                 .setParameter("ip", ip)

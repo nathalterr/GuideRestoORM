@@ -92,7 +92,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     public List<EvaluationCriteria> findByDescription(String description) {
         EntityManager em = getEntityManager();
        return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
-            .setParameter("descripton","%" + description + "%")
+            .setParameter("description","%" + description + "%")
             .getResultList();
     }
 

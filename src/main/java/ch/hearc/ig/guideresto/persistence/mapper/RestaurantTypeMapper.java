@@ -260,7 +260,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         EntityManager em = getEntityManager();
         return new HashSet<>(
                 em.createQuery(
-                        "SELECT rt FROM RestaurantType rt WHERE rt.name = :name",
+                        "SELECT rt FROM RestaurantType rt WHERE rt.label = :name",
                         RestaurantType.class
                 )
                         .setParameter("name", name)

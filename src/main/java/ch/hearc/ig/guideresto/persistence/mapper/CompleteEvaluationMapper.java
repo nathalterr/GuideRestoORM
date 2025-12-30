@@ -211,9 +211,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         EntityManager em = getEntityManager();
 
         return em.createQuery(
-                "SELECT c FROM commentaires c" +
-                        "WHERE c.nom_utilisateur = :username" +
-                        "AND c.fk_rest = :restaurantid",
+                "SELECT ce FROM CompleteEvaluation ce" +
+                        "WHERE ce.username = :username" +
+                        "AND ce = :restaurantid",
                         CompleteEvaluation.class
         )
                 .setParameter("username", username)
