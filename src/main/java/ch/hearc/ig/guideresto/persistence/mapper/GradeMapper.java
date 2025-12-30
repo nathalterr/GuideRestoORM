@@ -221,7 +221,6 @@ public class GradeMapper extends AbstractMapper<Grade> {
         return "SELECT COUNT(*) FROM NOTES";
     }
 
-    @Override
     public Set<Grade> findByCompleteEvaluation(CompleteEvaluation completeEvaluation) {
         EntityManager em = getEntityManager();
         return new HashSet<>(
@@ -235,30 +234,6 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
     }
 
-    // 🔹 Utilitaires avec cache aussi
-    public Set<Grade> findByCompleteEvaluation(CompleteEvaluation eval) {
-        Set<Grade> grades = new HashSet<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_COMPLETE_EVALUATION)) {
-            stmt.setInt(1, eval.getId());
-            try (ResultSet rs = stmt.executeQuery()) {
-                while (rs.next()) {
-                    Integer id = rs.getInt("numero");
-                    Grade grade = identityMap.get(id);
-                    if (grade == null) {
-                        EvaluationCriteria crit = criteriaMapper.findById(rs.getInt("fk_crit"));
-                        grade = new Grade(id, rs.getInt("note"), eval, crit);
-                        identityMap.put(id, grade);
-                    }
-                    grades.add(grade);
-                }
-            }
-        } catch (SQLException ex) {
-            System.err.println("Erreur findByCompleteEvaluation Grade : " + ex.getMessage());
-        }
-
-        return grades;
-    }
     public Set<Grade> findByEvaluation(CompleteEvaluation eval) {
         Set<Grade> grades = new LinkedHashSet<>();
 

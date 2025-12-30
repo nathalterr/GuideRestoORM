@@ -22,7 +22,12 @@ import java.util.Date;
         name = "BasicEvaluation.findByRestaurant",
         query = "SELECT be FROM BasicEvaluation be WHERE be.restaurant = :restaurant"
 )
-
+@NamedQuery(
+        name = "BasicEvaluation.findByIpAndRestaurant",
+        query = "SELECT l FROM BasicEvaluation l " +
+                "WHERE l.ipAddress = :ip " +
+                "AND l.restaurant.id = :restaurantId"
+)
 @Table(name="LIKES")
 public class BasicEvaluation extends Evaluation {
     @Column

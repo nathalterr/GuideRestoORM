@@ -32,6 +32,15 @@ import java.util.Set;
          name = "Restaurant.findByLocalisation",
          query = "SELECT r FROM Restaurant r WHERE r.address.street LIKE :street"
  )
+ @NamedQuery(
+         name = "Restaurant.findByRestaurantType",
+         query = "SELECT r FROM Restaurant r WHERE r.type.label = :label"
+ )
+ @NamedQuery(
+         name = "Restaurant.findByCity",
+         query = "SELECT r FROM Restaurant r WHERE r.address.city.cityName = :cityName"
+ )
+
 
  @Table(name = "RESTAURANTS")
 public class Restaurant implements IBusinessObject {

@@ -74,7 +74,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         WHERE LOWER(nom) LIKE LOWER(?)
         """;
 
-    public RestaurantMapper() {
+    public RestaurantMapper() throws SQLException {
         this.connection = getConnection();
     }
 
@@ -252,7 +252,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     /**
      * Retourne tous les restaurants situés dans une ville donnée
      */
-    @Override
     public Set<Restaurant> findByCity(String cityName) {
         EntityManager em = getEntityManager();
         return new HashSet<>(
@@ -268,7 +267,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     /**
      * Retourne tous les restaurants d'un type donné
      */
-    @Override
+
     public Set<Restaurant> findByRestaurantType(String label) {
         EntityManager em = getEntityManager();
         return new HashSet<>(
@@ -280,17 +279,5 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
                         .getResultList()
         );
     }
-
-    public Set<Restaurant> findByName(String name) {
-        EntityManager em = getEntityManager();
-        return new HashSet<>(
-                em.createNamedQuery(
-                    "Restaurant.findByName",
-                    Restaurant.class
-        )
-                .setParameter("name"), name)
-                .getResultList()
-            );
-        }
-}
+  }
 

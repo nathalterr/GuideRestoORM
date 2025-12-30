@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
 import ch.hearc.ig.guideresto.business.BasicEvaluation;
+import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
@@ -89,7 +90,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     public List<BasicEvaluation> findAll() {
         EntityManager em = getEntityManager();
         return em.createQuery(
-                "SELECT l FROM likes, l",
+                "SELECT be FROM BasicEvaluation be",
                 BasicEvaluation.class
         ).getResultList();
     }
@@ -193,21 +194,14 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
         }
     }
 
-    @Override
-    public Set<BasicEvaluation> findByIpAndRest(String ip, Integer restaurantId) {
+    public List<BasicEvaluation> findByIpAndRest(String ip, Integer restaurantId) {
         EntityManager em = getEntityManager();
 
-        return em.createQuery(
-                        "SELECT l FROM likes l" +
-                                "WHERE l.ipAddress = :ip" +
-                                "AND l.restaurant.id = :restaurantId",
-                        BasicEvaluation.class
-                )
+        return em.createNamedQuery("BasicEvaluation.findByIpAndRestaurant", BasicEvaluation.class)
                 .setParameter("ip", ip)
                 .setParameter("restaurantId", restaurantId)
-                .getResultStream()
-                .findFirst()
-                .orElse(null);
+                .getResultList();
     }
+
 }
 

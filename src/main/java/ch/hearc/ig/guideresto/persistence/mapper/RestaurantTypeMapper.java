@@ -145,49 +145,32 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     @Override
     public RestaurantType create(RestaurantType type) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
         try {
-            // 🔹 Vérifie si le type existe déjà pour éviter doublon inutile
-            RestaurantType existing = findByName(type.getLabel());
-            if (existing != null) {
-                return existing;
+            // 🔹 Vérifie si le type existe déjà pour éviter doublons
+            List<RestaurantType> types = findByName(type.getLabel());
+            if (types.isEmpty()) {
+                return types.getFirst();
             }
 
-            // 🔹 Génération de l'ID via la séquence
-            int id;
-            try (PreparedStatement seqStmt = connection.prepareStatement(SQL_CREATE_GENERATE_ID)) {
-                try (ResultSet rs = seqStmt.executeQuery()) {
-                    if (!rs.next()) throw new SQLException("Impossible de récupérer NEXTVAL pour SEQ_TYPES_GASTRONOMIQUES");
-                    id = rs.getInt(1);
-                }
-            }
-            type.setId(id);
-
-            // 🔹 Insert dans la table
-            try (PreparedStatement stmt = connection.prepareStatement(SQL_CREATE_INSERT)) {
-                stmt.setInt(1, type.getId());
-                stmt.setString(2, type.getLabel());
-                stmt.setString(3, type.getDescription());
-                stmt.executeUpdate();
-            }
-
-            // 🔹 Commit si nécessaire
-            if (!connection.getAutoCommit()) connection.commit();
-
-            // 🔹 Ajout au cache
-            identityMap.put(type.getId(), type);
+            // 🔹 Persist via Hibernate
+            tx.begin();
+            em.persist(type);  // Hibernate gère l'ID automatiquement
+            tx.commit();
 
             return type;
 
-        } catch (SQLException e) {
-            logger.error("Erreur create RestaurantType: {}", e.getMessage());
-            try {
-                if (!connection.getAutoCommit()) connection.rollback();
-            } catch (SQLException r) {
-                logger.error("Rollback failed: {}", r.getMessage());
-            }
+        } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
+            logger.error("Erreur create RestaurantType: {}", e.getMessage(), e);
             return null;
+        } finally {
+            em.close();
         }
     }
+
 
     @Override
     public boolean update(RestaurantType object) {
@@ -255,12 +238,11 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return "SELECT COUNT(*) FROM TYPES_GASTRONOMIQUES";
     }
 
-    @Override
-    public Set<RestaurantType> findByName(String name) {
+    public List<RestaurantType> findByName(String name) {
         EntityManager em = getEntityManager();
-        return new HashSet<>(
+        return new ArrayList<>(
                 em.createQuery(
-                        "SELECT rt FROM RestaurantType rt WHERE rt.name = :name",
+                        "SELECT rt FROM RestaurantType rt WHERE rt.label = :name",
                         RestaurantType.class
                 )
                         .setParameter("name", name)

@@ -13,6 +13,7 @@ import jakarta.persistence.*;
         query = "SELECT g FROM Grade g WHERE g.grade = :grade"
 )
 
+
 @Table(name="NOTES")
 public class Grade implements IBusinessObject {
     @Id
