@@ -40,7 +40,8 @@ public class RestaurantService {
         return all;
     }
 
-    public List<Restaurant> findRestaurantsByType(String typeLabel, RestaurantTypeMapper typeMapper) {
+    public List<Restaurant> findRestaurantsByType(String typeLabel) {
+        RestaurantTypeMapper typeMapper = new RestaurantTypeMapper();
         List<RestaurantType> types = typeMapper.findByLabel(typeLabel);
 
         RestaurantType type = types.get(0); // prend le premier élément

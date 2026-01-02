@@ -18,15 +18,7 @@ public class Application {
 
     private static Scanner scanner;
     private static final Logger logger = LogManager.getLogger(Application.class);
-    private static final UserService userService;
 
-    static {
-        try {
-            userService = new UserService();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
 //ici je crois qu'il faut les utiliser uniquement quand nécéssaire
     private static RestaurantService restoServ;
     private static EvaluationService evalServ;
@@ -200,7 +192,7 @@ public class Application {
         String research = readString();
         try {
             // ⚡ On passe par le service au lieu du mapper
-            List<Restaurant> filtered = userService.findRestaurantsByCity(research);
+            List<Restaurant> filtered = restoServ.findRestaurantsByCity(research);
 
             if (filtered.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé dans une ville contenant : " + research);
@@ -304,7 +296,7 @@ public class Application {
             if (chosenType == null) return;
 
             // ⚡ Utilisation du service pour filtrer par type
-            List<Restaurant> filtered = userService.findRestaurantsByType(chosenType.getLabel());
+            List<Restaurant> filtered = restoServ.findRestaurantsByType(chosenType.getLabel());
 
             if (filtered.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé pour le type : " + chosenType.getLabel());
@@ -543,7 +535,7 @@ public class Application {
             notes.put(crit, note);
         }
 
-        // Déleguer à UserService
+        // Déleguer au service Evaluation
         evalServ.addCompleteEvaluation(restaurant, username, comment, notes);
 
         System.out.println("✅ Évaluation enregistrée avec succès !");

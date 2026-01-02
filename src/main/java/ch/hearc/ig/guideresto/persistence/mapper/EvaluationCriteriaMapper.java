@@ -5,6 +5,7 @@ import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.NoResultException;
 
 import java.sql.*;
 import java.util.*;
@@ -13,122 +14,111 @@ import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria> {
-
-    private static final Map<Integer, EvaluationCriteria> identityMap = new HashMap<>();
-    private final Connection connection;
-    private static final String SQL_FIND_BY_ID = """
-        
-            SELECT numero, nom, description
-        FROM CRITERES_EVALUATION
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_FIND_ALL =
-            """
-        SELECT numero, nom, description
-        FROM CRITERES_EVALUATION
-        """;
-
-
-    public EvaluationCriteriaMapper() throws SQLException {
-        this.connection = getConnection();
-    }
-
-    public List<EvaluationCriteria> findByName(String name) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("EvaluationCriteria.findByName", EvaluationCriteria.class)
-                .setParameter("name", "%" + name + "%")
-                .getResultList();
-    }
-
-    public List<EvaluationCriteria> findByDescription(String description) {
-        try (EntityManager em = getEntityManager()) {
-            return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
-                    .setParameter("description", "%" + description + "%")
-                    .getResultList();
-        }
-    }
-
-    public EvaluationCriteria findById(Integer id) {
-        EntityManager em = getEntityManager();
-        try {
-            return em.createNamedQuery("EvaluationCriteria.findById", EvaluationCriteria.class)
-                    .setParameter("id", id)
-                    .getSingleResult();
-        } finally {
-            em.close();
-        }
-    }
-
-    public List<EvaluationCriteria> findAll() {
-        EntityManager em = getEntityManager();
-        try {
-            return em.createNamedQuery("EvaluationCriteria.findAll", EvaluationCriteria.class)
-                    .getResultList();
-        } finally {
-            em.close();
-        }
+    public EvaluationCriteriaMapper() {
     }
 
     @Override
     public EvaluationCriteria create(EvaluationCriteria critere) {
-        EntityManager em = getEntityManager();
-        em.getTransaction().begin();
-        em.persist(critere);
-        em.getTransaction().commit();
-        return critere;
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                em.persist(critere);
+                tx.commit();
+                return critere;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur create EvaluationCriteria", e);
+                return null;
+            }
+        }
     }
-
 
     @Override
     public boolean update(EvaluationCriteria critere) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-            em.merge(critere);
-            tx.commit();
-            return true;
-        } catch (Exception e) {
-            if (tx.isActive()) {
-                tx.rollback();
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                em.merge(critere);
+                tx.commit();
+                return true;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur update EvaluationCriteria", e);
+                return false;
             }
-            logger.error("Erreur update evaluationCriteria", e);
-            return false;
         }
     }
 
     @Override
     public boolean delete(EvaluationCriteria critere) {
+        if (critere == null || critere.getId() == null) return false;
         return deleteById(critere.getId());
     }
 
     @Override
     public boolean deleteById(Integer id) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
+        if (id == null) return false;
 
-        try {
-            tx.begin();
-
-            EvaluationCriteria criteria =
-                    em.find(EvaluationCriteria.class, id);
-
-            if (criteria == null) {
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                EvaluationCriteria critere = em.find(EvaluationCriteria.class, id);
+                if (critere == null) {
+                    tx.commit();
+                    return false;
+                }
+                em.remove(critere);
                 tx.commit();
+                return true;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur deleteById EvaluationCriteria", e);
                 return false;
             }
+        }
+    }
 
-            em.remove(criteria);
+    public EvaluationCriteria findById(Integer id) {
+        if (id == null) return null;
 
-            tx.commit();
-            return true;
+        try (EntityManager em = getEntityManager()) {
+            try {
+                return em.createNamedQuery("EvaluationCriteria.findById", EvaluationCriteria.class)
+                        .setParameter("id", id)
+                        .getSingleResult();
+            } catch (NoResultException e) {
+                return null;
+            }
+        }
+    }
 
-        } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
-            logger.error("EvaluationCriteria - Erreur lors de deleteById", e);
-            return false;
+    public List<EvaluationCriteria> findAll() {
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("EvaluationCriteria.findAll", EvaluationCriteria.class)
+                    .getResultList();
+        }
+    }
+
+    public List<EvaluationCriteria> findByName(String name) {
+        if (name == null || name.isEmpty()) return List.of();
+
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("EvaluationCriteria.findByName", EvaluationCriteria.class)
+                    .setParameter("name", "%" + name + "%")
+                    .getResultList();
+        }
+    }
+
+    public List<EvaluationCriteria> findByDescription(String description) {
+        if (description == null || description.isEmpty()) return List.of();
+
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
+                    .setParameter("description", "%" + description + "%")
+                    .getResultList();
         }
     }
 

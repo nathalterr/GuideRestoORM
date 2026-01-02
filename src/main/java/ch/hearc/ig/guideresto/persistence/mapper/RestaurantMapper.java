@@ -22,74 +22,8 @@ import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
     private static final Logger logger = LoggerFactory.getLogger(RestaurantMapper.class);
-    private final Connection connection;
-    private static final Map<Integer, Restaurant> identityMap = new HashMap<>();
-    private CityMapper cityMapper;
-    public RestaurantTypeMapper typeMapper;
 
-
-    private static final String SQL_UPDATE_ADDRESS = """
-        UPDATE RESTAURANTS
-        SET adresse = ?, fk_vill = ?
-        WHERE numero = ?
-        """;
-
-    public RestaurantMapper() throws SQLException {
-        this.connection = getConnection();
-    }
-
-    public void setDependenciesEval(CompleteEvaluationMapper completeEvalMapper,
-                                    GradeMapper gradeMapper,
-                                    BasicEvaluationMapper basicEvalMapper) {
-    }
-
-    public void setDependenciesCityType(CityMapper cityMapper, RestaurantTypeMapper typeMapper){
-        this.cityMapper = cityMapper;
-        this.typeMapper = typeMapper;
-    }
-
-    public Restaurant findById(Integer id) {
-        EntityManager em = getEntityManager();
-        return em.find(Restaurant.class, id);
-    }
-
-    public List<Restaurant> findByName(String name) {
-        try (EntityManager em = getEntityManager()) {
-            return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
-                    .setParameter("name", "%" + name + "%")
-                    .getResultList();
-        }
-    }
-
-
-    public List<Restaurant> findByDescription(String description) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("Restaurant.findByDescription", Restaurant.class)
-                .setParameter("description", "%" + description + "%")
-                .getResultList();
-    }
-
-    public List<Restaurant> findByWebsite(String website) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("Restaurant.findByWebsite", Restaurant.class)
-                .setParameter("website", "%" + website + "%")
-                .getResultList();
-    }
-
-    public List<Restaurant> findByLocalisation(String street) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("Restaurant.findByLocalisation", Restaurant.class)
-                .setParameter("street", "%" + street + "%")
-                .getResultList();
-    }
-
-    @Override
-    public List<Restaurant> findAll() {
-        EntityManager em = getEntityManager();
-        return em.createQuery(
-                "SELECT r FROM Restaurant r",
-                Restaurant.class
-        ).getResultList();
+    public RestaurantMapper() {
     }
 
     @Override
@@ -128,58 +62,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             return false;
         }
     }
-
-    @Override
-    public boolean delete(Restaurant restaurant) {
-        if (restaurant == null || restaurant.getId() == null) {
-            return false;
-        }
-        return deleteById(restaurant.getId());
-    }
-
-    public boolean deleteById(Integer id) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-
-            Restaurant rest = em.find(Restaurant.class, id);
-            if (rest == null) {
-                tx.commit();
-                return false;
-            }
-
-            em.remove(rest); // Hibernate supprime : CompleteEvaluation -> Grades + BasicEvaluation
-
-            tx.commit();
-
-            removeFromCache(id); // si tu gères un cache à part
-            return true;
-
-        } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
-            logger.error("Restaurant - ErrordDeleteByID", e);
-            return false;
-        }
-    }
-
-
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT SEQ_RESTAURANTS.NEXTVAL FROM dual";
-    }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM RESTAURANTS WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM RESTAURANTS";
-    }
-
     /**
      * Met à jour l'adresse et la ville d'un restaurant
      */
@@ -210,15 +92,84 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         }
     }
 
-
-
-    public void removeFromCache(Integer id) {
-        identityMap.remove(id);
+    @Override
+    public boolean delete(Restaurant restaurant) {
+        if (restaurant == null || restaurant.getId() == null) {
+            return false;
+        }
+        return deleteById(restaurant.getId());
     }
 
-    public void clearCache() {
-        identityMap.clear();
+    public boolean deleteById(Integer id) {
+        EntityManager em = getEntityManager();
+        EntityTransaction tx = em.getTransaction();
+
+        try {
+            tx.begin();
+
+            Restaurant rest = em.find(Restaurant.class, id);
+            if (rest == null) {
+                tx.commit();
+                return false;
+            }
+
+            em.remove(rest); // Hibernate supprime : CompleteEvaluation -> Grades + BasicEvaluation
+
+            tx.commit();
+
+            return true;
+
+        } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
+            logger.error("Restaurant - ErrordDeleteByID", e);
+            return false;
+        }
     }
+
+    @Override
+    public Restaurant findById(Integer id) {
+        EntityManager em = getEntityManager();
+        return em.find(Restaurant.class, id);
+    }
+
+    @Override
+    public List<Restaurant> findAll() {
+        EntityManager em = getEntityManager();
+        return em.createQuery(
+                "SELECT r FROM Restaurant r",
+                Restaurant.class
+        ).getResultList();
+    }
+
+    public List<Restaurant> findByName(String name) {
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
+                    .setParameter("name", "%" + name + "%")
+                    .getResultList();
+        }
+    }
+
+    public List<Restaurant> findByDescription(String description) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Restaurant.findByDescription", Restaurant.class)
+                .setParameter("description", "%" + description + "%")
+                .getResultList();
+    }
+
+    public List<Restaurant> findByWebsite(String website) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Restaurant.findByWebsite", Restaurant.class)
+                .setParameter("website", "%" + website + "%")
+                .getResultList();
+    }
+
+    public List<Restaurant> findByLocalisation(String street) {
+        EntityManager em = getEntityManager();
+        return em.createNamedQuery("Restaurant.findByLocalisation", Restaurant.class)
+                .setParameter("street", "%" + street + "%")
+                .getResultList();
+    }
+
     /**
      * Retourne tous les restaurants situés dans une ville donnée
      */
@@ -248,6 +199,20 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
                         .setParameter("label", label)
                         .getResultList()
         );
+    }
+    @Override
+    protected String getSequenceQuery() {
+        return "SELECT SEQ_RESTAURANTS.NEXTVAL FROM dual";
+    }
+
+    @Override
+    protected String getExistsQuery() {
+        return "SELECT 1 FROM RESTAURANTS WHERE numero = ?";
+    }
+
+    @Override
+    protected String getCountQuery() {
+        return "SELECT COUNT(*) FROM RESTAURANTS";
     }
   }
 

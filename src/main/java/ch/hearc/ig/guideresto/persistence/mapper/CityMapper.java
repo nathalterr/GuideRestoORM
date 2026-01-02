@@ -17,122 +17,120 @@ import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 public class CityMapper extends AbstractMapper<City> {
 
     private static final Logger logger = LoggerFactory.getLogger(CityMapper.class);
-    private final Connection connection;
-    private final Map<Integer, City> identityMap = new HashMap<>();
 
-    private static final String SQL_FIND_BY_NAME = """
-        SELECT numero, code_postal, nom_ville
-        FROM VILLES
-        WHERE nom_ville = ?
-        """;
-
-
-    private static final String SQL_EXISTS_BY_NAME = """
-        SELECT 1
-        FROM VILLES
-        WHERE nom_ville = ?
-        """;
-
-    public CityMapper() throws SQLException {
-        this.connection = getConnection();
-    }
-
-    @Override
-    public City findById(Integer id) {
-        EntityManager em = getEntityManager();
-        return em.find(City.class, id);
-    }
-
-    public List<City> findByZipCode(String zipCode) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("City.findByZipCode", City.class)
-                .setParameter("zipCode", "%" + zipCode + "%") // mettre les % ici
-                .getResultList();
-    }
-
-    public List<City> findByCityName(String cityName) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("City.findByCityName", City.class)
-                .setParameter("name", "%" + cityName + "%")
-                .getResultList();
-    }
-
-    @Override
-    public List<City> findAll() {
-        EntityManager em = getEntityManager();
-        return em.createQuery(
-                "SELECT c FROM City c",
-                City.class
-        ).getResultList();
+    public CityMapper() {
     }
 
     @Override
     public City create(City city) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try{
-            tx.begin();
-            em.persist(city);
-            tx.commit();
-            return city;
-        } catch (Exception e) {
-            if (tx.isActive()) {
-                tx.rollback();
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                em.persist(city);
+                tx.commit();
+                return city;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur create City", e);
+                return null;
             }
-            logger.error("Erreur create City", e);
-            return null;
         }
     }
 
     @Override
     public boolean update(City city) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-            em.merge(city);
-            tx.commit();
-            return true;
-        } catch (Exception e) {
-            if (tx.isActive()) {
-                tx.rollback();
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                em.merge(city);
+                tx.commit();
+                return true;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur update City", e);
+                return false;
             }
-            logger.error("Erreur update City", e);
-            return false;
         }
     }
 
     @Override
     public boolean delete(City city) {
+        if (city == null || city.getId() == null) return false;
         return deleteById(city.getId());
     }
 
     @Override
     public boolean deleteById(Integer id) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
+        if (id == null) return false;
 
-        try {
-            tx.begin();
-
-            City entity = em.find(City.class, id);
-            if (entity == null) {
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                City entity = em.find(City.class, id);
+                if (entity == null) {
+                    tx.commit();
+                    return false;
+                }
+                em.remove(entity);
                 tx.commit();
+                return true;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("City - Exception in deleteById", e);
                 return false;
             }
+        }
+    }
 
-            em.remove(entity);
-            tx.commit();
-            return true;
+    @Override
+    public City findById(Integer id) {
+        if (id == null) return null;
 
-        } catch (Exception ex) {
-            if (tx.isActive()) {
-                tx.rollback();
-            }
-            logger.error("City - Exception in deleteById", ex);
-            return false;
+        try (EntityManager em = getEntityManager()) {
+            return em.find(City.class, id);
+        }
+    }
+
+    @Override
+    public List<City> findAll() {
+        try (EntityManager em = getEntityManager()) {
+            return em.createQuery("SELECT c FROM City c", City.class)
+                    .getResultList();
+        }
+    }
+
+    public List<City> findByZipCode(String zipCode) {
+        if (zipCode == null || zipCode.isEmpty()) return List.of();
+
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("City.findByZipCode", City.class)
+                    .setParameter("zipCode", "%" + zipCode + "%")
+                    .getResultList();
+        }
+    }
+
+    public List<City> findByCityName(String cityName) {
+        if (cityName == null || cityName.isEmpty()) return List.of();
+
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("City.findByCityName", City.class)
+                    .setParameter("name", "%" + cityName + "%")
+                    .getResultList();
+        }
+    }
+
+    public City findByName(String name) {
+        if (name == null || name.isEmpty()) return null;
+
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("City.findByName", City.class)
+                    .setParameter("name", name)
+                    .getResultStream()
+                    .findFirst()
+                    .orElse(null);
         }
     }
 
@@ -151,22 +149,16 @@ public class CityMapper extends AbstractMapper<City> {
         return "SELECT COUNT(*) FROM VILLES";
     }
 
-    public City findByName(String name) {
+    public boolean existsByName(String name) {
+        if (name == null || name.isEmpty()) return false;
+
         try (EntityManager em = getEntityManager()) {
-            return em.createNamedQuery("City.findByName", City.class)
+            Long count = em.createNamedQuery("City.existsByName", Long.class)
                     .setParameter("name", name)
-                    .getResultStream()
-                    .findFirst()
-                    .orElse(null);
+                    .getSingleResult();
+            return count != null && count > 0;
         }
     }
 
-    public boolean existsByName(String name) {
-        try (EntityManager em = getEntityManager()) {
-            return em.createNamedQuery("City.existsByName", Boolean.class)
-                    .setParameter("name", name)
-                    .getSingleResult();
-        }
-    }
 
 }

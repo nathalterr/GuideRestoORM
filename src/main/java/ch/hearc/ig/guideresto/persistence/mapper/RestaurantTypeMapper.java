@@ -22,147 +22,129 @@ import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     private static final Logger logger = LoggerFactory.getLogger(RestaurantTypeMapper.class);
-    private final Connection connection;
-    private final Map<Integer, RestaurantType> identityMap = new HashMap<>();
 
-    public RestaurantTypeMapper() throws SQLException {
-        this.connection = getConnection();
+    public RestaurantTypeMapper() {
     }
+
+    @Override
+    public RestaurantType create(RestaurantType type) {
+        try (EntityManager em = getEntityManager()) {
+
+            // Vérifie si un type avec le même label existe déjà
+            List<RestaurantType> existingTypes = findByName(type.getLabel());
+            if (!existingTypes.isEmpty()) {
+                return existingTypes.get(0);
+            }
+
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                em.persist(type);
+                tx.commit();
+                return type;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur create RestaurantType", e);
+                return null;
+            }
+        }
+    }
+
+    @Override
+    public boolean update(RestaurantType type) {
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                em.merge(type);
+                tx.commit();
+                return true;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur update RestaurantType", e);
+                return false;
+            }
+        }
+    }
+
+    @Override
+    public boolean deleteById(Integer id) {
+        try (EntityManager em = getEntityManager()) {
+            EntityTransaction tx = em.getTransaction();
+            try {
+                tx.begin();
+                RestaurantType entity = em.find(RestaurantType.class, id);
+                if (entity == null) {
+                    tx.commit();
+                    return false;
+                }
+                em.remove(entity);
+                tx.commit();
+                return true;
+            } catch (Exception e) {
+                if (tx.isActive()) tx.rollback();
+                logger.error("Erreur deleteById RestaurantType", e);
+                return false;
+            }
+        }
+    }
+
+    @Override
+    public boolean delete(RestaurantType type) {
+        if (type == null || type.getId() == null) return false;
+        return deleteById(type.getId());
+    }
+
 
     @Override
     public RestaurantType findById(Integer id) {
         if (id == null) return null;
 
-        // 🔹 cache identité
-        if (identityMap.containsKey(id)) {
-            return identityMap.get(id);
+        try (EntityManager em = JpaUtils.getEntityManager()) {
+            try {
+                return em.createNamedQuery("RestaurantType.findById", RestaurantType.class)
+                        .setParameter("id", id)
+                        .getSingleResult();
+            } catch (NoResultException e) {
+                return null;
+            }
         }
-
-        EntityManager em = JpaUtils.getEntityManager();
-        try {
-            RestaurantType type = em.createNamedQuery(
-                            "RestaurantType.findById",
-                            RestaurantType.class
-                    )
-                    .setParameter("id", id)
-                    .getSingleResult();
-
-            identityMap.put(type.getId(), type);
-            return type;
-
-        } catch (NoResultException e) {
-            return null;
-        } finally {
-            em.close();
-        }
-    }
-
-
-    public List<RestaurantType> findByLabel(String label) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("RestaurantType.findByLabel", RestaurantType.class)
-                .setParameter("label", "%" + label + "%")
-                .getResultList();
-    }
-
-    public List<RestaurantType> findByDescription(String description) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("RestaurantType.findByDescription", RestaurantType.class)
-                .setParameter("description", "%" + description + "%")
-                .getResultList();
     }
 
     @Override
     public List<RestaurantType> findAll() {
-        EntityManager em = JpaUtils.getEntityManager();
-        try {
-            return em.createNamedQuery(
-                    "RestaurantType.findAll",
-                    RestaurantType.class
-            ).getResultList();
-        } finally {
-            em.close();
+        try (EntityManager em = JpaUtils.getEntityManager()) {
+            return em.createNamedQuery("RestaurantType.findAll", RestaurantType.class)
+                    .getResultList();
         }
     }
 
-
-    @Override
-    public RestaurantType create(RestaurantType type) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            // 🔹 Vérifie si le type existe déjà pour éviter doublons
-            List<RestaurantType> types = findByName(type.getLabel());
-            if (types.isEmpty()) {
-                return types.getFirst();
-            }
-
-            // 🔹 Persist via Hibernate
-            tx.begin();
-            em.persist(type);  // Hibernate gère l'ID automatiquement
-            tx.commit();
-
-            return type;
-
-        } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
-            logger.error("Erreur create RestaurantType: {}", e.getMessage(), e);
-            return null;
-        } finally {
-            em.close();
+    public List<RestaurantType> findByLabel(String label) {
+        try (EntityManager em = JpaUtils.getEntityManager()) {
+            return em.createNamedQuery("RestaurantType.findByLabel", RestaurantType.class)
+                    .setParameter("label", "%" + label + "%")
+                    .getResultList();
         }
     }
 
-
-    @Override
-    public boolean update(RestaurantType object) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-            em.merge(object);
-            tx.commit();
-            return true;
-        } catch (Exception e) {
-            if (tx.isActive()) {
-                tx.rollback();
-            }
-            logger.error("Erreur update RestaurantType", e);
-            return false;
+    public List<RestaurantType> findByDescription(String description) {
+        try (EntityManager em = JpaUtils.getEntityManager()) {
+            return em.createNamedQuery("RestaurantType.findByDescription", RestaurantType.class)
+                    .setParameter("description", "%" + description + "%")
+                    .getResultList();
         }
     }
 
-    @Override
-    public boolean delete(RestaurantType typeResto) {
-        return deleteById(typeResto.getId());
-    }
+    public List<RestaurantType> findByName(String name) {
+        if (name == null || name.isEmpty()) return List.of();
 
-    @Override
-    public boolean deleteById(Integer id) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-
-            RestaurantType entity = em.find(RestaurantType.class, id);
-            if (entity == null) {
-                tx.commit();
-                return false;
-            }
-
-            em.remove(entity);
-            tx.commit();
-            return true;
-
-        } catch (Exception ex) {
-            if (tx.isActive()) {
-                tx.rollback();
-            }
-            logger.error("RestaurantType - Exception in deleteById", ex);
-            return false;
+        try (EntityManager em = JpaUtils.getEntityManager()) {
+            return em.createQuery(
+                            "SELECT rt FROM RestaurantType rt WHERE rt.label = :name",
+                            RestaurantType.class
+                    )
+                    .setParameter("name", name)
+                    .getResultList();
         }
     }
 
@@ -181,19 +163,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         return "SELECT COUNT(*) FROM TYPES_GASTRONOMIQUES";
     }
 
-    public List<RestaurantType> findByName(String name) {
-        EntityManager em = getEntityManager();
-        return new ArrayList<>(
-                em.createQuery(
-                        "SELECT rt FROM RestaurantType rt WHERE rt.label = :name",
-                        RestaurantType.class
-                )
-                        .setParameter("name", name)
-                        .getResultList()
-        );
-    }
-
     public boolean existsByName(String name) {
+        if (name == null || name.isEmpty()) return false;
+
         try (EntityManager em = JpaUtils.getEntityManager()) {
             Long count = em.createNamedQuery("RestaurantType.existsByName", Long.class)
                     .setParameter("label", name)
@@ -201,5 +173,4 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
             return count != null && count > 0;
         }
     }
-
 }
