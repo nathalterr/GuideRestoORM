@@ -8,10 +8,9 @@ import java.util.List;
 import java.util.Set;
 
 public class CityService {
-    private final CityMapper cityMapper;
+    private final CityMapper cityMapper = new CityMapper();
 
-    public CityService(CityMapper cityMapper) {
-        this.cityMapper = cityMapper;
+    public CityService() throws SQLException {
     }
 
     public List<City> getAllCities() {

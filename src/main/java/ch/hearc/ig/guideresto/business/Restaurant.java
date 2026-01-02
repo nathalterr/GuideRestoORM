@@ -15,7 +15,7 @@ import java.util.Set;
 
  @NamedQuery(
          name = "Restaurant.findByName",
-         query = "SELECT r FROM Restaurant r WHERE r.name LIKE :name"
+         query = "SELECT r FROM Restaurant r WHERE LOWER(r.name) LIKE LOWER(:name)"
  )
 
  @NamedQuery(
@@ -39,6 +39,10 @@ import java.util.Set;
  @NamedQuery(
          name = "Restaurant.findByCity",
          query = "SELECT r FROM Restaurant r WHERE r.address.city.cityName = :cityName"
+ )
+ @NamedQuery(
+         name = "Restaurant.updateAddress",
+         query = "UPDATE Restaurant r SET r.address.street = :street, r.address.city = :city WHERE r.id = :id"
  )
 
 

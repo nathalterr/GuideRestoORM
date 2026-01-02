@@ -3,8 +3,10 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.NoResultException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,84 +25,38 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     private final Connection connection;
     private final Map<Integer, RestaurantType> identityMap = new HashMap<>();
 
-    private static final String SQL_FIND_BY_ID = """
-    SELECT numero, libelle, description
-    FROM TYPES_GASTRONOMIQUES
-    WHERE numero = ?
-   """;
-
-    private static final String SQL_FIND_BY_LABEL = """
-    SELECT numero, libelle, description
-    FROM TYPES_GASTRONOMIQUES
-    WHERE libelle = ?
-   """;
-
-    private static final String SQL_FIND_BY_DESCRIPTION = """
-    SELECT numero, libelle, description
-    FROM TYPES_GASTRONOMIQUES
-    WHERE libelle = ?
-   """;
-
-    private static final String SQL_FIND_ALL = """
-    SELECT numero, libelle, description
-    FROM TYPES_GASTRONOMIQUES
-   """;
-
-    private static final String SQL_UPDATE = """
-    UPDATE TYPES_GASTRONOMIQUES SET libelle = ?, description = ? WHERE numero = ?
-    """;
-
-    private static final String SQL_EXISTS_BY_NAME = """
-    SELECT 1 FROM TYPES_GASTRONOMIQUES
-    WHERE libelle = ?
-    """;
-    private static final String SQL_FIND_BY_NAME= """
-    SELECT numero, libelle, description FROM TYPES_GASTRONOMIQUES
-    WHERE libelle = ?
-    """;
-
-    private static final String SQL_CREATE_GENERATE_ID= """
-    SELECT SEQ_TYPES_GASTRONOMIQUES.NEXTVAL FROM dual
-    """;
-
-    private static final String SQL_CREATE_INSERT = """
-    INSERT INTO TYPES_GASTRONOMIQUES (numero, libelle, description)
-    VALUES (?, ?, ?)
-    """;
-
-
     public RestaurantTypeMapper() throws SQLException {
         this.connection = getConnection();
     }
 
     @Override
     public RestaurantType findById(Integer id) {
-        // 🔹 Vérifie d'abord dans le cache
-        if (identityMap.containsKey(id)) {
+        if (id == null) return null;
 
+        // 🔹 cache identité
+        if (identityMap.containsKey(id)) {
             return identityMap.get(id);
         }
 
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    RestaurantType type = new RestaurantType(
-                            rs.getInt("numero"),
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
+        EntityManager em = JpaUtils.getEntityManager();
+        try {
+            RestaurantType type = em.createNamedQuery(
+                            "RestaurantType.findById",
+                            RestaurantType.class
+                    )
+                    .setParameter("id", id)
+                    .getSingleResult();
 
-                    // Ajout dans le cache
-                    identityMap.put(type.getId(), type);
-                    return type;
-                }
-            }
-        } catch (SQLException ex) {
-            logger.error("findById SQLException: {}", ex.getMessage());
+            identityMap.put(type.getId(), type);
+            return type;
+
+        } catch (NoResultException e) {
+            return null;
+        } finally {
+            em.close();
         }
-        return null;
     }
+
 
     public List<RestaurantType> findByLabel(String label) {
         EntityManager em = getEntityManager();
@@ -118,30 +74,17 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
     @Override
     public List<RestaurantType> findAll() {
-        List<RestaurantType> types = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-
-                RestaurantType type = identityMap.get(id);
-                if (type == null) {
-                    type = new RestaurantType(
-                            id,
-                            rs.getString("libelle"),
-                            rs.getString("description")
-                    );
-                    identityMap.put(id, type);
-                }
-
-                types.add(type);
-            }
-        } catch (SQLException ex) {
-            logger.error("findAll SQLException: {}", ex.getMessage());
+        EntityManager em = JpaUtils.getEntityManager();
+        try {
+            return em.createNamedQuery(
+                    "RestaurantType.findAll",
+                    RestaurantType.class
+            ).getResultList();
+        } finally {
+            em.close();
         }
-        return types;
     }
+
 
     @Override
     public RestaurantType create(RestaurantType type) {
@@ -250,15 +193,13 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         );
     }
 
-    public boolean existsByName(String name) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_EXISTS_BY_NAME)) {
-            stmt.setString(1, name);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
-            }
-        } catch (SQLException ex) {
-            logger.error("existsByName SQLException: {}", ex.getMessage());
-            throw ex;
+    public boolean existsByName(String name) {
+        try (EntityManager em = JpaUtils.getEntityManager()) {
+            Long count = em.createNamedQuery("RestaurantType.existsByName", Long.class)
+                    .setParameter("label", name)
+                    .getSingleResult();
+            return count != null && count > 0;
         }
     }
+
 }

@@ -20,42 +20,12 @@ public class CityMapper extends AbstractMapper<City> {
     private final Connection connection;
     private final Map<Integer, City> identityMap = new HashMap<>();
 
-    private static final String SQL_FIND_BY_ID = """
-        SELECT numero, code_postal, nom_ville
-        FROM VILLES
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_FIND_ALL = """
-        SELECT numero, code_postal, nom_ville
-        FROM VILLES
-        """;
-
-    private static final String SQL_CREATE = """
-        BEGIN
-            INSERT INTO VILLES (code_postal, nom_ville)
-            VALUES (?, ?)
-            RETURNING numero INTO ?;
-        END;
-        """;
-
-    private static final String SQL_UPDATE = """
-        UPDATE VILLES
-        SET code_postal = ?, nom_ville = ?
-        WHERE numero = ?
-        """;
-
     private static final String SQL_FIND_BY_NAME = """
         SELECT numero, code_postal, nom_ville
         FROM VILLES
         WHERE nom_ville = ?
         """;
 
-    private static final String SQL_FIND_BY_ZIP_CODE = """
-        SELECT numero, code_postal, nom_ville
-        FROM VILLES
-        WHERE code_postal = ?
-        """;
 
     private static final String SQL_EXISTS_BY_NAME = """
         SELECT 1
@@ -181,48 +151,22 @@ public class CityMapper extends AbstractMapper<City> {
         return "SELECT COUNT(*) FROM VILLES";
     }
 
-    public City findByName(String name) throws SQLException {
-        // Vérifie d'abord si la ville est dans le cache
-        for (City cachedCity : identityMap.values()) {
-            if (cachedCity.getCityName().equalsIgnoreCase(name)) {
-                return cachedCity;
-            }
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_NAME)) {
-            stmt.setString(1, name);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Integer id = rs.getInt("numero");
-
-                    // Vérifie encore le cache au cas où
-                    if (identityMap.containsKey(id)) return identityMap.get(id);
-
-                    City city = new City(
-                            id,
-                            rs.getString("code_postal"),
-                            rs.getString("nom_ville")
-                    );
-
-                    identityMap.put(id, city);
-                    return city;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur findByName City: {}", e.getMessage());
-            throw e;
-        }
-
-        return null;
-    }
-
-    public boolean existsByName(String name) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_EXISTS_BY_NAME)) {
-            stmt.setString(1, name);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
-            }
+    public City findByName(String name) {
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("City.findByName", City.class)
+                    .setParameter("name", name)
+                    .getResultStream()
+                    .findFirst()
+                    .orElse(null);
         }
     }
+
+    public boolean existsByName(String name) {
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("City.existsByName", Boolean.class)
+                    .setParameter("name", name)
+                    .getSingleResult();
+        }
+    }
+
 }

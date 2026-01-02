@@ -20,46 +20,6 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     private RestaurantMapper restaurantMapper;
     private GradeMapper gradeMapper;
 
-    private static final String SQL_FIND_BY_ID = """
-            SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
-            FROM COMMENTAIRES
-            WHERE numero = ?
-            """;
-
-    private static final String SQL_FIND_ALL = """
-            SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
-            FROM COMMENTAIRES
-            """;
-
-    private static final String SQL_CREATE = """
-            BEGIN
-                INSERT INTO COMMENTAIRES (date_eval, commentaire, nom_utilisateur, fk_rest)
-                VALUES (?, ?, ?, ?)
-                RETURNING numero INTO ?;
-            END;
-            """;
-
-    private static final String SQL_UPDATE =
-            """
-        UPDATE COMMENTAIRES
-        SET date_eval = ?, commentaire = ?, nom_utilisateur = ?, fk_rest
-                WHERE numero
-                """;
-
-    private static final String SQL_FIND_BY_RESTAURANT =
-            """
-        SELECT numero, date_eval, commentaire, nom_utilisateur
-        FROM COMMENTAIRES
-        WHERE fk_rest
-                """;
-
-    private static final String SQL_FIND_BY_USER_AND_RESTAURANT =
-            """
-        SELECT numero, date_eval, commentaire, nom_utilisateur, fk_rest
-        FROM COMMENTAIRES
-        WHERE nom_utilisateur = ? AND fk_rest
-                """;
-
     public CompleteEvaluationMapper() throws SQLException {
         this.connection = getConnection();
     }

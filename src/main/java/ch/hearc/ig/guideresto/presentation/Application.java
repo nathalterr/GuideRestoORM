@@ -2,9 +2,7 @@ package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
-import ch.hearc.ig.guideresto.services.EvaluationService;
-import ch.hearc.ig.guideresto.services.RestaurantService;
-import ch.hearc.ig.guideresto.services.UserService;
+import ch.hearc.ig.guideresto.services.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import java.sql.SQLException;
@@ -29,15 +27,19 @@ public class Application {
             throw new RuntimeException(e);
         }
     }
-
+//ici je crois qu'il faut les utiliser uniquement quand nécéssaire
     private static RestaurantService restoServ;
     private static EvaluationService evalServ;
+    private static RestaurantTypeService restoTypeServ;
+    private static CityService cityServ;
 
 
     static {
         try {
             restoServ = new RestaurantService();
             evalServ = new EvaluationService();
+            restoTypeServ = new RestaurantTypeService();
+            cityServ = new CityService();
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -171,7 +173,6 @@ public class Application {
         List<Restaurant> restaurants ;
 
         try {
-            // ⚡ On passes par le service, plus par le mapper
             restaurants = restoServ.findRestaurantsByName(research);
             if (restaurants.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé pour : " + research);
@@ -237,7 +238,7 @@ public class Application {
             String zip = readString();
 
             // ⚡ Création via le service, pas le mapper
-            City newCity = userService.addCity(name, zip);
+            City newCity = cityServ.addCity(name, zip);
             return newCity;
         } else {
             return cities.stream()
@@ -254,14 +255,41 @@ public class Application {
      * @return Le type sélectionné, ou null si aucun type n'a été choisi.
      */
     private static RestaurantType pickRestaurantType(List<RestaurantType> types) {
-        System.out.println("Voici la liste des types possibles, veuillez entrer le libellé exact du type désiré : ");
-        for (RestaurantType currentType : types) {
-            System.out.println("\"" + currentType.getLabel() + "\" : " + currentType.getDescription());
+        if (types == null || types.isEmpty()) {
+            System.out.println("Aucun type disponible.");
+            return null;
         }
-        String choice = readString();
 
-        return searchTypeByLabel(types, choice);
+        System.out.println("Choisissez un type de restaurant :");
+        for (int i = 0; i < types.size(); i++) {
+            RestaurantType t = types.get(i);
+            System.out.println((i + 1) + ") " + t.getLabel() + " : " + t.getDescription());
+        }
+
+        System.out.print("Entrez le numéro ou le libellé : ");
+        String input = readString().trim();
+
+        // Si l'user tape le numéro
+        if (input.matches("\\d+")) {
+            int index = Integer.parseInt(input) - 1;
+            if (index >= 0 && index < types.size()) {
+                return types.get(index);
+            }
+            System.out.println("Numéro invalide.");
+            return null;
+        }
+
+        // Si l'user tape le nom
+        for (RestaurantType type : types) {
+            if (type.getLabel().equalsIgnoreCase(input)) {
+                return type;
+            }
+        }
+
+        System.out.println("Type non reconnu.");
+        return null;
     }
+
 
     /**
      * L'utilisateur commence par sélectionner un type de restaurant, puis sélectionne un des restaurants proposés s'il y en a.
@@ -271,7 +299,7 @@ public class Application {
         try {
             // Récupère tous les types via le service si tu en as un,
             // sinon tu peux passer par un Set déjà connu
-            List<RestaurantType> types = userService.getAllTypes(); // si tu as un service pour les types
+            List<RestaurantType> types = restoTypeServ.getAllTypes(); // si tu as un service pour les types
             RestaurantType chosenType = pickRestaurantType(types);
             if (chosenType == null) return;
 
@@ -308,17 +336,17 @@ public class Application {
         // Sélection ou création de la ville
         City city = null;
         do {
-            city = pickCity(userService.getAllCities());
+            city = pickCity(cityServ.getAllCities());
         } while (city == null);
 
         // Sélection du type de restaurant
         RestaurantType type = null;
         do {
-            type = pickRestaurantType(userService.getAllTypes());
+            type = pickRestaurantType(restoTypeServ.getAllTypes());
         } while (type == null);
 
         // Création via le service
-        Restaurant restaurant = userService.addRestaurant(name, desc, website, street, city, type);
+        Restaurant restaurant = restoServ.addRestaurant(name, desc, website, street, city, type);
 
         if (restaurant != null) {
             System.out.println("✅ Restaurant ajouté avec succès !");
@@ -486,8 +514,8 @@ public class Application {
      * @param like       Est-ce un like ou un dislike ?
      */
     private static void addBasicEvaluation(Restaurant restaurant, Boolean like) throws SQLException {
-        Restaurant myRestaurant = userService.getAllRestaurants().iterator().next(); // juste pour l'exemple
-        userService.addBasicEvaluation(myRestaurant, like);
+        Restaurant myRestaurant = restoServ.getAllRestaurants().iterator().next();
+        evalServ.addBasicEvaluation(myRestaurant, like);
         System.out.println("Votre vote a été pris en compte !");
     }
 
@@ -516,7 +544,7 @@ public class Application {
         }
 
         // Déleguer à UserService
-        userService.addCompleteEvaluation(restaurant, username, comment, notes);
+        evalServ.addCompleteEvaluation(restaurant, username, comment, notes);
 
         System.out.println("✅ Évaluation enregistrée avec succès !");
     }
@@ -541,7 +569,7 @@ public class Application {
         System.out.print("Nouveau site web : ");
         String newWebsite = readString();
 
-        RestaurantType newType = pickRestaurantType(userService.getAllTypes());
+        RestaurantType newType = pickRestaurantType(restoTypeServ.getAllTypes());
 
         System.out.print("Nouvelle rue : ");
         String newStreet = readString();
@@ -549,15 +577,15 @@ public class Application {
         System.out.print("Nom de la ville : ");
         String cityName = readString();
 
-        City dbCity = userService.findCityByName(cityName);
+        City dbCity = cityServ.findCityByName(cityName);
         if (dbCity == null) {
             System.out.print("Code postal pour la nouvelle ville : ");
             String postalCode = readString();
-            dbCity = userService.addOrGetCity(cityName, postalCode);
+            dbCity = cityServ.addOrGetCity(cityName, postalCode);
             System.out.println("Nouvelle ville créée : " + dbCity.getCityName());
         }
 
-        boolean updated = userService.updateRestaurantDetails(restaurant, newName, newDescription, newWebsite, newType, newStreet, dbCity);
+        boolean updated = restoServ.updateRestaurantDetails(restaurant, newName, newDescription, newWebsite, newType, newStreet, dbCity);
         System.out.println(updated ? "Restaurant mis à jour avec succès !" : "Erreur lors de la mise à jour.");
     }
 
@@ -578,15 +606,15 @@ public class Application {
         System.out.print("Nom de la ville : ");
         String cityName = readString();
 
-        City city = userService.findCityByName(cityName); // appel direct
+        City city = cityServ.findCityByName(cityName); // appel direct
         String postalCode = null;
         if (city == null) {
             System.out.print("Code postal pour la nouvelle ville : ");
             postalCode = readString();
-            city = userService.addOrGetCity(cityName,postalCode);
+            city = cityServ.addOrGetCity(cityName,postalCode);
         }
 
-        boolean updated = userService.updateRestaurantAddress(restaurant, newStreet, city); // appel direct
+        boolean updated = restoServ.updateRestaurantAddress(restaurant, newStreet, city); // appel direct
         System.out.println(updated ? "Adresse mise à jour avec succès !" : "Erreur lors de la mise à jour.");
     }
 

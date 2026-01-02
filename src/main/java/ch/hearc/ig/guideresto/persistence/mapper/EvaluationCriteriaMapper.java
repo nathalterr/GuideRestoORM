@@ -29,57 +29,9 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         FROM CRITERES_EVALUATION
         """;
 
-    private static final String SQL_CREATE =
-            """
-        BEGIN
-            INSERT INTO CRITERES_EVALUATION (nom, description)
-            VALUES (?, ?)
-            RETURNING numero IN
-                
-                 """;
-
-    private static final String SQL_UPDATE =
-            """
-        UPDATE CRITERES_EVALUATION
-        SET nom = ?, description = ?
-        WHERE number = ?;
-                 """;
-
-    private static final String SQL_FIND_BY_NAME =
-            """
-        SELECT numero, nom, description
-        FROM CRITERES_EVALUATION
-        WHERE no
-                 """;
 
     public EvaluationCriteriaMapper() throws SQLException {
         this.connection = getConnection();
-    }
-
-    @Override
-    public EvaluationCriteria findById(Integer id) {
-        // ✅ Vérifie d’abord le cache
-        if (identityMap.containsKey(id)) {
-            return identityMap.get(id);
-        }
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_BY_ID)) {
-            stmt.setInt(1, id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    EvaluationCriteria crit = new EvaluationCriteria(
-                            rs.getInt("numero"),
-                            rs.getString("nom"),
-                            rs.getString("description")
-                    );
-                    identityMap.put(id, crit);
-                    return crit;
-                }
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findById : {}", e.getMessage());
-        }
-        return null;
     }
 
     public List<EvaluationCriteria> findByName(String name) {
@@ -90,37 +42,32 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     }
 
     public List<EvaluationCriteria> findByDescription(String description) {
-        EntityManager em = getEntityManager();
-       return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
-            .setParameter("descripton","%" + description + "%")
-            .getResultList();
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("EvaluationCriteria.findByDescription", EvaluationCriteria.class)
+                    .setParameter("description", "%" + description + "%")
+                    .getResultList();
+        }
     }
 
-    @Override
-    public List<EvaluationCriteria> findAll() {
-        List<EvaluationCriteria> criteres = new ArrayList<>();
-
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_FIND_ALL);
-             ResultSet rs = stmt.executeQuery()) {
-
-            while (rs.next()) {
-                Integer id = rs.getInt("numero");
-                EvaluationCriteria crit = identityMap.get(id);
-
-                if (crit == null) {
-                    crit = new EvaluationCriteria(
-                            id,
-                            rs.getString("nom"),
-                            rs.getString("description")
-                    );
-                    identityMap.put(id, crit);
-                }
-                criteres.add(crit);
-            }
-        } catch (SQLException e) {
-            logger.error("Erreur lors du findAll : {}", e.getMessage());
+    public EvaluationCriteria findById(Integer id) {
+        EntityManager em = getEntityManager();
+        try {
+            return em.createNamedQuery("EvaluationCriteria.findById", EvaluationCriteria.class)
+                    .setParameter("id", id)
+                    .getSingleResult();
+        } finally {
+            em.close();
         }
-        return criteres;
+    }
+
+    public List<EvaluationCriteria> findAll() {
+        EntityManager em = getEntityManager();
+        try {
+            return em.createNamedQuery("EvaluationCriteria.findAll", EvaluationCriteria.class)
+                    .getResultList();
+        } finally {
+            em.close();
+        }
     }
 
     @Override

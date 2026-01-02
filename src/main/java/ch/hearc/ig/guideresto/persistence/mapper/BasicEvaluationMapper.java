@@ -26,46 +26,10 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     private final RestaurantMapper restaurantMapper;
     private final Map<Integer, BasicEvaluation> identityMap = new HashMap<>();
 
-    private static final String SQL_FIND_BY_ID = """
-        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
-        FROM LIKES
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_FIND_ALL = """
-        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
-        FROM LIKES
-        """;
-
-    private static final String SQL_CREATE = """
-        INSERT INTO LIKES (date_eval, appreciation, adresse_ip, fk_rest)
-        VALUES (?, ?, ?, ?)
-        """;
-
-    private static final String SQL_UPDATE = """
-        UPDATE LIKES
-        SET date_eval = ?, appreciation = ?, adresse_ip = ?, fk_rest = ?
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_FIND_BY_RESTAURANT = """
-        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
-        FROM LIKES
-        WHERE fk_rest = ?
-        """;
-
-    private static final String SQL_FIND_BY_IP_AND_RESTAURANT = """
-        SELECT numero, date_eval, appreciation, adresse_ip, fk_rest
-        FROM LIKES
-        WHERE adresse_ip = ? AND fk_rest = ?
-        """;
-
-
     public BasicEvaluationMapper() throws SQLException {
         this.connection = getConnection();
         this.restaurantMapper = new RestaurantMapper();
     }
-
 
     public BasicEvaluation findById(Integer id) {
         EntityManager em = getEntityManager();

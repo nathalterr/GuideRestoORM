@@ -15,10 +15,17 @@ import java.util.Set;
         name = "EvaluationCriteria.findByName",
         query = "SELECT ec FROM EvaluationCriteria ec WHERE ec.name LIKE :name"
 )
-
 @NamedQuery(
         name = "EvaluationCriteria.findByDescription",
         query = "SELECT ec FROM EvaluationCriteria ec WHERE ec.description LIKE :description"
+)
+@NamedQuery(
+        name = "EvaluationCriteria.findById",
+        query = "SELECT e FROM EvaluationCriteria e WHERE e.id = :id"
+)
+@NamedQuery(
+        name = "EvaluationCriteria.findAll",
+        query = "SELECT e FROM EvaluationCriteria e"
 )
 
 @Table(name="CRITERES_EVALUATION")

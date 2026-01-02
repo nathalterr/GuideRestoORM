@@ -19,6 +19,14 @@ import java.util.Set;
         name = "City.findByCityName",
         query = "SELECT c FROM City c WHERE c.cityName LIKE :name"
 )
+@NamedQuery(
+        name = "City.findByName",
+        query = "SELECT c FROM City c WHERE LOWER(c.cityName) = LOWER(:name)"
+)
+@NamedQuery(
+        name = "City.existsByName",
+        query = "SELECT COUNT(c) > 0 FROM City c WHERE LOWER(c.cityName) = LOWER(:name)"
+)
 
 @Table(name="VILLES")
 public class City implements IBusinessObject {

@@ -20,7 +20,18 @@ import java.util.Set;
         name = "RestaurantType.findByDescription",
         query = "SELECT rt FROM RestaurantType rt WHERE rt.description LIKE :description"
 )
-
+@NamedQuery(
+        name = "RestaurantType.findById",
+        query = "SELECT rt FROM RestaurantType rt WHERE rt.id = :id"
+)
+@NamedQuery(
+        name = "RestaurantType.findAll",
+        query = "SELECT rt FROM RestaurantType rt ORDER BY rt.label"
+)
+@NamedQuery(
+        name = "RestaurantType.existsByName",
+        query = "SELECT COUNT(rt) FROM RestaurantType rt WHERE rt.label = :label"
+)
 @Table(name="TYPES_GASTRONOMIQUES")
 public class RestaurantType implements IBusinessObject {
     @Id

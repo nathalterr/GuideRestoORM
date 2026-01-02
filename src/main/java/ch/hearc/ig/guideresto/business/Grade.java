@@ -8,11 +8,33 @@ import jakarta.persistence.*;
 
 @Entity
 
+
+
+
+
+
+
+
+@NamedQuery(
+        name = "Grade.findById",
+        query = "SELECT g FROM Grade g WHERE g.id = :id"
+)
+@NamedQuery(
+        name = "Grade.findAll",
+        query = "SELECT g FROM Grade g"
+)
+@NamedQuery(
+        name = "Grade.findByEvaluation",
+        query = "SELECT g FROM Grade g WHERE g.evaluation = :evaluation"
+)
 @NamedQuery(
         name = "Grade.findByGrade",
         query = "SELECT g FROM Grade g WHERE g.grade = :grade"
 )
-
+@NamedQuery(
+        name = "Grade.findByCompleteEvaluation",
+        query = "SELECT g FROM Grade g WHERE g.evaluation = :completeEvaluation"
+)
 
 @Table(name="NOTES")
 public class Grade implements IBusinessObject {

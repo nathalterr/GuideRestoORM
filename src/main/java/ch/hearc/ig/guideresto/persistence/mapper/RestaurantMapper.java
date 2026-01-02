@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import org.slf4j.Logger;
@@ -26,52 +27,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     private CityMapper cityMapper;
     public RestaurantTypeMapper typeMapper;
 
-    private static final String SQL_FIND_BY_ID = """
-        SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill
-        FROM RESTAURANTS
-        WHERE numero = ?
-        """;
-
-    private static final String SQL_FIND_ALL = """
-        SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill
-        FROM RESTAURANTS
-        """;
-
-    private static final String SQL_INSERT = """
-        INSERT INTO RESTAURANTS (numero, nom, description, site_web, adresse, fk_type, fk_vill)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-        """;
-
-    private static final String SQL_UPDATE = """
-        UPDATE RESTAURANTS
-        SET nom = ?, description = ?, site_web = ?, fk_type = ?
-        WHERE numero = ?
-        """;
 
     private static final String SQL_UPDATE_ADDRESS = """
         UPDATE RESTAURANTS
         SET adresse = ?, fk_vill = ?
         WHERE numero = ?
-        """;
-
-    private static final String SQL_FIND_BY_CITY = """
-        SELECT r.numero, r.nom, r.description, r.site_web, r.adresse, r.fk_type, r.fk_vill
-        FROM RESTAURANTS r
-        INNER JOIN VILLES v ON r.fk_vill = v.numero
-        WHERE v.nom_ville = ?
-        """;
-
-    private static final String SQL_FIND_BY_TYPE = """
-        SELECT r.numero, r.nom, r.description, r.site_web, r.adresse, r.fk_type, r.fk_vill
-        FROM RESTAURANTS r
-        INNER JOIN TYPES_GASTRONOMIQUES t ON r.fk_type = t.numero
-        WHERE t.libelle = ?
-        """;
-
-    private static final String SQL_FIND_BY_NAME = """
-        SELECT numero, nom, description, site_web, adresse, fk_type, fk_vill
-        FROM RESTAURANTS
-        WHERE LOWER(nom) LIKE LOWER(?)
         """;
 
     public RestaurantMapper() throws SQLException {
@@ -94,11 +54,13 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     }
 
     public List<Restaurant> findByName(String name) {
-        EntityManager em = getEntityManager();
-        return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
-                .setParameter("name", "%" + name + "%")
-                .getResultList();
+        try (EntityManager em = getEntityManager()) {
+            return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
+                    .setParameter("name", "%" + name + "%")
+                    .getResultList();
+        }
     }
+
 
     public List<Restaurant> findByDescription(String description) {
         EntityManager em = getEntityManager();
@@ -221,26 +183,34 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     /**
      * Met à jour l'adresse et la ville d'un restaurant
      */
-    public boolean updateAddress(Restaurant restaurant, String newStreet, City newCity) throws SQLException {
-        restaurant.getAddress().setStreet(newStreet);
+    public boolean updateAddress(Restaurant restaurant, String newStreet, City newCity) {
+        if (restaurant == null) return false;
 
-        if (newCity != null && newCity != restaurant.getAddress().getCity()) {
-            restaurant.getAddress().getCity().getRestaurants().remove(restaurant);
-            restaurant.getAddress().setCity(newCity);
-            newCity.getRestaurants().add(restaurant);
-        }
+        EntityManager em = JpaUtils.getEntityManager();
+        EntityTransaction tx = em.getTransaction();
 
-        try (PreparedStatement stmt = connection.prepareStatement(SQL_UPDATE_ADDRESS)) {
-            stmt.setString(1, restaurant.getAddress().getStreet());
-            stmt.setInt(2, restaurant.getAddress().getCity().getId());
-            stmt.setInt(3, restaurant.getId());
-            int rows = stmt.executeUpdate();
-            if (!connection.getAutoCommit()) connection.commit();
+        try {
+            tx.begin();
 
-            identityMap.put(restaurant.getId(), restaurant);
-            return rows > 0;
+            int updated = em.createNamedQuery("Restaurant.updateAddress")
+                    .setParameter("street", newStreet)
+                    .setParameter("city", newCity)
+                    .setParameter("id", restaurant.getId())
+                    .executeUpdate();
+
+            tx.commit();
+            return updated > 0;
+
+        } catch (Exception e) {
+            if (tx.isActive()) tx.rollback();
+            e.printStackTrace();
+            return false;
+        } finally {
+            em.close();
         }
     }
+
+
 
     public void removeFromCache(Integer id) {
         identityMap.remove(id);
