@@ -18,6 +18,11 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     public CompleteEvaluationMapper() {
     }
 
+    /**
+     * Méthode de persistence en base de donnée
+     * @param completeEvaluation à ajouter en base
+     * @return l'objet CompleteEvaluation créé, ou null en cas d'erreur
+     */
     @Override
     public CompleteEvaluation create(CompleteEvaluation completeEvaluation) {
         try (EntityManager em = getEntityManager()) {
@@ -29,12 +34,17 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                 return completeEvaluation;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur create CompleteEvaluation", e);
+
                 return null;
             }
         }
     }
 
+    /**
+     * Méthode de mise à jour en base de donnée
+     * @param evaluation - l'objet CompleteEvaluation à mettre à jour
+     * @return true si la mise à jour a réussi, false en cas d'erreur
+     */
     @Override
     public boolean update(CompleteEvaluation evaluation) {
         try (EntityManager em = getEntityManager()) {
@@ -46,18 +56,27 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                 return true;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur update CompleteEvaluation", e);
                 return false;
             }
         }
     }
 
+    /**
+     * Méthode de suppression en base de donnée
+     * @param evaluation - l'objet CompleteEvaluation à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     @Override
     public boolean delete(CompleteEvaluation evaluation) {
         if (evaluation == null || evaluation.getId() == null) return false;
         return deleteById(evaluation.getId());
     }
 
+    /**
+     * Méthode de suppression en base de donnée
+     * @param id - identifiant de l'objet CompleteEvaluation à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     @Override
     public boolean deleteById(Integer id) {
         if (id == null) return false;
@@ -76,12 +95,16 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                 return true;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("CompleteEvaluation - Erreur deleteById", e);
                 return false;
             }
         }
     }
 
+    /**
+     * Méthode de recherche d'une évaluation complète en base de données par son identifiant.
+     * @param id - identifiant du Grade recherché
+     * @return l'évaluation trouvée, ou null s'il n'existe pas
+     */
     public CompleteEvaluation findById(Integer id) {
         if (id == null) return null;
 
@@ -90,6 +113,10 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         }
     }
 
+    /**
+     * Méthode de recherche de toutes les évaluations complètes en base de donnée
+     * @return la liste des évaluations complètes trouvées
+     */
     @Override
     public List<CompleteEvaluation> findAll() {
         try (EntityManager em = getEntityManager()) {
@@ -100,6 +127,11 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         }
     }
 
+    /**
+     * Méthode de recherche d'une évaluation complète en base de données par commentaire
+     * @param comment - commentaire
+     * @return la liste des évaluations complètes trouvées
+     */
     public List<CompleteEvaluation> findByComment(String comment) {
         if (comment == null || comment.isEmpty()) return List.of();
 
@@ -110,6 +142,11 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         }
     }
 
+    /**
+     * Méthode de recherche d'une évaluation complète en base de données par nom d'utilisateur
+     * @param username - nom de l'utilisateur
+     * @return la liste des évaluations complètes trouvées
+     */
     public List<CompleteEvaluation> findByUsername(String username) {
         if (username == null || username.isEmpty()) return List.of();
 
@@ -119,7 +156,11 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                     .getResultList();
         }
     }
-
+    /**
+     * Méthode de recherche d'une évaluation complète en base de données par restaurant
+     * @param restaurant - instance du restaurant
+     * @return la liste des évaluations complètes trouvées
+     */
     public List<CompleteEvaluation> findByRestaurant(Restaurant restaurant) {
         if (restaurant == null) return List.of();
 
@@ -129,7 +170,12 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                     .getResultList();
         }
     }
-
+    /**
+     * Méthode de recherche d'une évaluation complète en base de données par restaurant et nom d'utilisateur
+     * @param username - nom de l'utilisateur
+     * @param restaurantId - identifiant du restaurant
+     * @return la liste des évaluations complètes trouvées
+     */
     public CompleteEvaluation findByUserAndRest(String username, Integer restaurantId) {
         if (username == null || restaurantId == null) return null;
 
@@ -146,22 +192,6 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
                     .findFirst()
                     .orElse(null);
         }
-    }
-
-
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT SEQ_EVAL.NEXTVAL FROM dual";
-    }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM COMMENTAIRES WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM COMMENTAIRES";
     }
 }
 

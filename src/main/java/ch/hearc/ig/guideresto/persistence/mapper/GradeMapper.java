@@ -21,6 +21,11 @@ public class GradeMapper extends AbstractMapper<Grade> {
     public GradeMapper() {
     }
 
+    /**
+     * Méthode de persistence en base de donnée
+     * @param grade à ajouter en base
+     * @return l'objet Grade créé, ou null en cas d'erreur
+     */
     public Grade create(Grade grade) {
         try (EntityManager em = getEntityManager()) {
             EntityTransaction tx = em.getTransaction();
@@ -31,12 +36,16 @@ public class GradeMapper extends AbstractMapper<Grade> {
                 return grade;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur create Grade", e);
                 return null;
             }
         }
     }
 
+    /**
+     * Méthode de mise à jour en base de donnée
+     * @param grade - l'objet Grade à mettre à jour
+     * @return true si la mise à jour a réussi, false en cas d'erreur
+     */
     public boolean update(Grade grade) {
         try (EntityManager em = getEntityManager()) {
             EntityTransaction tx = em.getTransaction();
@@ -47,17 +56,27 @@ public class GradeMapper extends AbstractMapper<Grade> {
                 return true;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur update Grade", e);
                 return false;
             }
         }
     }
+
+    /**
+     * Méthode de suppression en base de donnée
+     * @param grade - l'objet Grade à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
 
     @Override
     public boolean delete(Grade grade) {
         return deleteById(grade.getId());
     }
 
+    /**
+     * Méthode de suppression en base de donnée
+     * @param id - identifiant de l'objet Grade à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     @Override
     public boolean deleteById(Integer id) {
         try (EntityManager em = getEntityManager()) {
@@ -77,12 +96,16 @@ public class GradeMapper extends AbstractMapper<Grade> {
 
             } catch (Exception ex) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Exception in deleteById", ex);
                 return false;
             }
         }
     }
 
+    /**
+     * Méthode de recherche d'une note en base de données par son identifiant.
+     * @param id - identifiant du Grade recherché
+     * @return la note trouvée, ou null s'il n'existe pas
+     */
     public Grade findById(Integer id) {
         try (EntityManager em = getEntityManager()) {
             try {
@@ -95,6 +118,10 @@ public class GradeMapper extends AbstractMapper<Grade> {
         }
     }
 
+    /**
+     * Méthode de recherche de toutes les notes en base de donnée
+     * @return la liste des notes trouvées
+     */
     public List<Grade> findAll() {
         try (EntityManager em = getEntityManager()) {
             return em.createNamedQuery("Grade.findAll", Grade.class)
@@ -102,6 +129,11 @@ public class GradeMapper extends AbstractMapper<Grade> {
         }
     }
 
+    /**
+     * Méthode de recherche d'une note en base de données par valeur de note
+     * @param gradeValue - valeur de la note
+     * @return la liste des notes trouvées
+     */
     public List<Grade> findByGrade(Integer gradeValue) {
         try (EntityManager em = getEntityManager()) {
             return em.createNamedQuery("Grade.findByGrade", Grade.class)
@@ -110,47 +142,22 @@ public class GradeMapper extends AbstractMapper<Grade> {
         }
     }
 
-    public Set<Grade> findByCompleteEvaluation(CompleteEvaluation completeEvaluation) {
-        try (EntityManager em = getEntityManager()) {
-            List<Grade> grades = em.createNamedQuery(
-                            "Grade.findByCompleteEvaluation",
-                            Grade.class
-                    )
-                    .setParameter("completeEvaluation", completeEvaluation)
-                    .getResultList();
-
-            return new HashSet<>(grades);
-        }
-    }
-
-    public Set<Grade> findByEvaluation(CompleteEvaluation eval) {
+    /**
+     * Méthode de recherche d'une note en base de données par évaluation complète
+     * @param completeEvaluation - évaluation complète concernée
+     * @return le Set des notes trouvées
+     */
+    public Set<Grade> findByEvaluation(CompleteEvaluation completeEvaluation) {
         try (EntityManager em = getEntityManager()) {
             List<Grade> grades = em.createNamedQuery(
                             "Grade.findByEvaluation",
                             Grade.class
                     )
-                    .setParameter("evaluation", eval)
+                    .setParameter("evaluation", completeEvaluation)
                     .getResultList();
 
             return new LinkedHashSet<>(grades);
         }
     }
-
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT SEQ_NOTES.NEXTVAL FROM dual";
-    }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM NOTES WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM NOTES";
-    }
-
-
 }
 

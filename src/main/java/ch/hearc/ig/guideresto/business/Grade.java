@@ -31,11 +31,6 @@ import jakarta.persistence.*;
         name = "Grade.findByGrade",
         query = "SELECT g FROM Grade g WHERE g.grade = :grade"
 )
-@NamedQuery(
-        name = "Grade.findByCompleteEvaluation",
-        query = "SELECT g FROM Grade g WHERE g.evaluation = :completeEvaluation"
-)
-
 @Table(name="NOTES")
 public class Grade implements IBusinessObject {
     @Id

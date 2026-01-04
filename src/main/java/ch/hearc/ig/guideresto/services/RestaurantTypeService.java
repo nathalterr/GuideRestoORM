@@ -9,8 +9,16 @@ import java.util.Set;
 
 public class RestaurantTypeService {
     private final RestaurantTypeMapper typeMapper = new RestaurantTypeMapper();
+    private static RestaurantTypeService instance;
 
-    public RestaurantTypeService() throws SQLException {
+    private RestaurantTypeService() throws SQLException {
+    }
+
+    public static RestaurantTypeService getInstance() throws SQLException {
+        if (instance == null) {
+            instance = new RestaurantTypeService();
+        }
+        return instance;
     }
 
     public List<RestaurantType> getAllTypes() {
@@ -23,6 +31,6 @@ public class RestaurantTypeService {
     }
 
     public List<RestaurantType> findByLabel(String label) {
-        return typeMapper.findByLabel(label);
+        return typeMapper.findByName(label);
     }
 }

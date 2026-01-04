@@ -3,12 +3,11 @@ package ch.hearc.ig.guideresto.presentation;
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
 import ch.hearc.ig.guideresto.services.*;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import java.sql.SQLException;
 import java.util.*;
 
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.closePool;
+import static ch.hearc.ig.guideresto.services.CityService.getInstance;
 
 /**
  * @author cedric.baudet
@@ -17,26 +16,6 @@ import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.closePool;
 public class Application {
 
     private static Scanner scanner;
-    private static final Logger logger = LogManager.getLogger(Application.class);
-
-//ici je crois qu'il faut les utiliser uniquement quand nécéssaire
-    private static RestaurantService restoServ;
-    private static EvaluationService evalServ;
-    private static RestaurantTypeService restoTypeServ;
-    private static CityService cityServ;
-
-
-    static {
-        try {
-            restoServ = new RestaurantService();
-            evalServ = new EvaluationService();
-            restoTypeServ = new RestaurantTypeService();
-            cityServ = new CityService();
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static void main(String[] args) {
 
         scanner = new Scanner(System.in);
@@ -149,8 +128,7 @@ public class Application {
     private static void showRestaurantsList() throws SQLException{
 
         System.out.println("Liste des restaurants : ");
-        RestaurantService rs = new RestaurantService();
-        List<Restaurant> restaurants = rs.getAllRestaurants();
+        List<Restaurant> restaurants = RestaurantService.getInstance().getAllRestaurants();
         Restaurant restaurant = pickRestaurant(restaurants);
         if (restaurant != null) {
             showRestaurant(restaurant);
@@ -165,7 +143,7 @@ public class Application {
         List<Restaurant> restaurants ;
 
         try {
-            restaurants = restoServ.findRestaurantsByName(research);
+            restaurants = RestaurantService.getInstance().findRestaurantsByName(research);
             if (restaurants.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé pour : " + research);
             }
@@ -192,7 +170,7 @@ public class Application {
         String research = readString();
         try {
             // ⚡ On passe par le service au lieu du mapper
-            List<Restaurant> filtered = restoServ.findRestaurantsByCity(research);
+            List<Restaurant> filtered = RestaurantService.getInstance().findRestaurantsByCity(research);
 
             if (filtered.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé dans une ville contenant : " + research);
@@ -214,7 +192,7 @@ public class Application {
      * @param cities La liste des villes à présnter à l'utilisateur
      * @return La ville sélectionnée, ou null si aucune ville n'a été choisie.
      */
-    private static City pickCity(List<City> cities) {
+    private static City pickCity(List<City> cities) throws SQLException {
         System.out.println("Villes disponibles :");
         for (City c : cities) {
             System.out.println(c.getZipCode() + " " + c.getCityName());
@@ -229,9 +207,8 @@ public class Application {
             System.out.print("Code postal : ");
             String zip = readString();
 
-            // ⚡ Création via le service, pas le mapper
-            City newCity = cityServ.addCity(name, zip);
-            return newCity;
+            //Retour de addCity provenant du service Singleton
+            return CityService.getInstance().addCity(name, zip);
         } else {
             return cities.stream()
                     .filter(c -> c.getZipCode().equalsIgnoreCase(choice))
@@ -291,12 +268,12 @@ public class Application {
         try {
             // Récupère tous les types via le service si tu en as un,
             // sinon tu peux passer par un Set déjà connu
-            List<RestaurantType> types = restoTypeServ.getAllTypes(); // si tu as un service pour les types
+            List<RestaurantType> types = RestaurantTypeService.getInstance().getAllTypes(); // si tu as un service pour les types
             RestaurantType chosenType = pickRestaurantType(types);
             if (chosenType == null) return;
 
             // ⚡ Utilisation du service pour filtrer par type
-            List<Restaurant> filtered = restoServ.findRestaurantsByType(chosenType.getLabel());
+            List<Restaurant> filtered = RestaurantService.getInstance().findRestaurantsByType(chosenType.getLabel());
 
             if (filtered.isEmpty()) {
                 System.out.println("Aucun restaurant trouvé pour le type : " + chosenType.getLabel());
@@ -328,17 +305,17 @@ public class Application {
         // Sélection ou création de la ville
         City city = null;
         do {
-            city = pickCity(cityServ.getAllCities());
+            city = pickCity(CityService.getInstance().getAllCities());
         } while (city == null);
 
         // Sélection du type de restaurant
         RestaurantType type = null;
         do {
-            type = pickRestaurantType(restoTypeServ.getAllTypes());
+            type = pickRestaurantType(RestaurantTypeService.getInstance().getAllTypes());
         } while (type == null);
 
         // Création via le service
-        Restaurant restaurant = restoServ.addRestaurant(name, desc, website, street, city, type);
+        Restaurant restaurant = RestaurantService.getInstance().addRestaurant(name, desc, website, street, city, type);
 
         if (restaurant != null) {
             System.out.println("✅ Restaurant ajouté avec succès !");
@@ -374,13 +351,12 @@ public class Application {
 
             System.out.println("Chargement des likes - test");
 
-            List<BasicEvaluation> basicEvals = evalServ.getBasicEvaluations(restaurant);
-            System.out.println("Likes : " + evalServ.countLikes(basicEvals, true));
-            System.out.println("Dislikes : " + evalServ.countLikes(basicEvals, false));
+            List<BasicEvaluation> basicEvals = EvaluationService.getInstance().getBasicEvaluations(restaurant);
+            System.out.println("Likes : " + EvaluationService.getInstance().countLikes(basicEvals, true));
+            System.out.println("Dislikes : " + EvaluationService.getInstance().countLikes(basicEvals, false));
             System.out.println();
-
             // Evaluation complete
-            List<CompleteEvaluation> completeEvals = evalServ.getCompleteEvaluations(restaurant);
+            List<CompleteEvaluation> completeEvals = EvaluationService.getInstance().getCompleteEvaluations(restaurant);
             System.out.println("Évaluations complètes :");
             if (completeEvals.isEmpty()) {
                 System.out.println("Aucune évaluation complète pour ce restaurant.");
@@ -506,8 +482,8 @@ public class Application {
      * @param like       Est-ce un like ou un dislike ?
      */
     private static void addBasicEvaluation(Restaurant restaurant, Boolean like) throws SQLException {
-        Restaurant myRestaurant = restoServ.getAllRestaurants().iterator().next();
-        evalServ.addBasicEvaluation(myRestaurant, like);
+        Restaurant myRestaurant = RestaurantService.getInstance().getAllRestaurants().iterator().next();
+        EvaluationService.getInstance().addBasicEvaluation(myRestaurant, like);
         System.out.println("Votre vote a été pris en compte !");
     }
 
@@ -536,7 +512,7 @@ public class Application {
         }
 
         // Déleguer au service Evaluation
-        evalServ.addCompleteEvaluation(restaurant, username, comment, notes);
+        EvaluationService.getInstance().addCompleteEvaluation(restaurant, username, comment, notes);
 
         System.out.println("✅ Évaluation enregistrée avec succès !");
     }
@@ -561,7 +537,7 @@ public class Application {
         System.out.print("Nouveau site web : ");
         String newWebsite = readString();
 
-        RestaurantType newType = pickRestaurantType(restoTypeServ.getAllTypes());
+        RestaurantType newType = pickRestaurantType(RestaurantTypeService.getInstance().getAllTypes());
 
         System.out.print("Nouvelle rue : ");
         String newStreet = readString();
@@ -569,15 +545,15 @@ public class Application {
         System.out.print("Nom de la ville : ");
         String cityName = readString();
 
-        City dbCity = cityServ.findCityByName(cityName);
+        City dbCity = CityService.getInstance().findCityByName(cityName);
         if (dbCity == null) {
             System.out.print("Code postal pour la nouvelle ville : ");
             String postalCode = readString();
-            dbCity = cityServ.addOrGetCity(cityName, postalCode);
+            dbCity = CityService.getInstance().addOrGetCity(cityName, postalCode);
             System.out.println("Nouvelle ville créée : " + dbCity.getCityName());
         }
 
-        boolean updated = restoServ.updateRestaurantDetails(restaurant, newName, newDescription, newWebsite, newType, newStreet, dbCity);
+        boolean updated = RestaurantService.getInstance().updateRestaurantDetails(restaurant, newName, newDescription, newWebsite, newType, newStreet, dbCity);
         System.out.println(updated ? "Restaurant mis à jour avec succès !" : "Erreur lors de la mise à jour.");
     }
 
@@ -595,18 +571,13 @@ public class Application {
         System.out.print("Nouvelle rue : ");
         String newStreet = readString();
 
-        System.out.print("Nom de la ville : ");
-        String cityName = readString();
+        // Sélection ou création de la ville
+        City city = null;
+        do {
+            city = pickCity(CityService.getInstance().getAllCities());
+        } while (city == null);
 
-        City city = cityServ.findCityByName(cityName); // appel direct
-        String postalCode = null;
-        if (city == null) {
-            System.out.print("Code postal pour la nouvelle ville : ");
-            postalCode = readString();
-            city = cityServ.addOrGetCity(cityName,postalCode);
-        }
-
-        boolean updated = restoServ.updateRestaurantAddress(restaurant, newStreet, city); // appel direct
+        boolean updated = RestaurantService.getInstance().updateRestaurantAddress(restaurant, newStreet, city); // appel direct
         System.out.println(updated ? "Adresse mise à jour avec succès !" : "Erreur lors de la mise à jour.");
     }
 
@@ -617,11 +588,11 @@ public class Application {
      *
      * @param restaurant Le restaurant à supprimer.
      */
-    private static void deleteRestaurant(Restaurant restaurant) {
+    private static void deleteRestaurant(Restaurant restaurant) throws SQLException {
         System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equalsIgnoreCase("o")) {
-            boolean deleted = restoServ.deleteRestaurant(restaurant);
+            boolean deleted = RestaurantService.getInstance().deleteRestaurant(restaurant);
             System.out.println(deleted ? "Restaurant supprimé avec succès !" : "Erreur lors de la suppression.");
         } else {
             System.out.println("Suppression annulée.");

@@ -1,4 +1,4 @@
-package ch.hearc.ig.guideresto.presentation;
+package ch.hearc.ig.guideresto.test;
 
 import ch.hearc.ig.guideresto.business.*;
 import jakarta.persistence.*;

@@ -6,8 +6,6 @@ import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -21,11 +19,14 @@ import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
-    private static final Logger logger = LoggerFactory.getLogger(RestaurantMapper.class);
-
     public RestaurantMapper() {
     }
 
+    /**
+     * Méthode de persistence en base de donnée
+     * @param restaurant à ajouter en base
+     * @return l'objet Restaurant créé, ou null en cas d'erreur
+     */
     @Override
     public Restaurant create(Restaurant restaurant) {
         EntityManager em = getEntityManager();
@@ -40,11 +41,14 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             if (tx.isActive()) {
                 tx.rollback();
             }
-            logger.error("Erreur create Restaurant", e);
             return null;
         }
     }
-
+    /**
+     * Méthode de mise à jour en base de donnée
+     * @param restaurant - l'objet Restaurant à mettre à jour
+     * @return true si la mise à jour a réussi, false en cas d'erreur
+     */
     @Override
     public boolean update(Restaurant restaurant) {
         EntityManager em = getEntityManager();
@@ -58,12 +62,15 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
             if (tx.isActive()) {
                 tx.rollback();
             }
-            logger.error("Erreur update Restaurant", e);
             return false;
         }
     }
     /**
-     * Met à jour l'adresse et la ville d'un restaurant
+     * Méthode de mise à jour de l'adresse et de la ville d'un restaurant
+     * @param restaurant - Instance du restaurant à modifier
+     * @param newStreet - Nom et numéro de rue
+     * @param newCity - Instance de la nouvelle ville
+     * @return true si réussi, false si pas réussi
      */
     public boolean updateAddress(Restaurant restaurant, String newStreet, City newCity) {
         if (restaurant == null) return false;
@@ -92,6 +99,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         }
     }
 
+    /**
+     * Méthode de suppression en base de donnée
+     * @param restaurant - l'objet Restaurant à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     @Override
     public boolean delete(Restaurant restaurant) {
         if (restaurant == null || restaurant.getId() == null) {
@@ -100,6 +112,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         return deleteById(restaurant.getId());
     }
 
+    /**
+     * Méthode de suppression d'un restaurant en base de donnée par identifiant
+     * @param id - identifiant du restaurant à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     public boolean deleteById(Integer id) {
         EntityManager em = getEntityManager();
         EntityTransaction tx = em.getTransaction();
@@ -121,17 +138,25 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
 
         } catch (Exception e) {
             if (tx.isActive()) tx.rollback();
-            logger.error("Restaurant - ErrordDeleteByID", e);
             return false;
         }
     }
 
+    /**
+     * Méthode de recherche d'un restaurant en base de données par son identifiant.
+     * @param id - identifiant du restaurant recherché
+     * @return le restaurant trouvé, ou null s'il n'existe pas
+     */
     @Override
     public Restaurant findById(Integer id) {
         EntityManager em = getEntityManager();
         return em.find(Restaurant.class, id);
     }
 
+    /**
+     * Méthode de recherche de tous les restaurants en base de donnée
+     * @return la liste des restaurants trouvés
+     */
     @Override
     public List<Restaurant> findAll() {
         EntityManager em = getEntityManager();
@@ -141,6 +166,11 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         ).getResultList();
     }
 
+    /**
+     * Méthode de recherche de restaurants en base de données par nom.
+     * @param name - nom du restaurant recherché
+     * @return la liste des restaurants trouvés
+     */
     public List<Restaurant> findByName(String name) {
         try (EntityManager em = getEntityManager()) {
             return em.createNamedQuery("Restaurant.findByName", Restaurant.class)
@@ -148,21 +178,33 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
                     .getResultList();
         }
     }
-
+    /**
+     * Méthode de recherche de restaurants en base de données par description.
+     * @param description - description du restaurant recherché
+     * @return la liste des restaurants trouvés
+     */
     public List<Restaurant> findByDescription(String description) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("Restaurant.findByDescription", Restaurant.class)
                 .setParameter("description", "%" + description + "%")
                 .getResultList();
     }
-
+    /**
+     * Méthode de recherche de restaurants en base de données par site internet.
+     * @param website - site web du restaurant recherché
+     * @return la liste des restaurants trouvés
+     */
     public List<Restaurant> findByWebsite(String website) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("Restaurant.findByWebsite", Restaurant.class)
                 .setParameter("website", "%" + website + "%")
                 .getResultList();
     }
-
+    /**
+     * Méthode de recherche de restaurants en base de données par rue.
+     * @param street - rue du restaurant recherché
+     * @return la liste des restaurants trouvés
+     */
     public List<Restaurant> findByLocalisation(String street) {
         EntityManager em = getEntityManager();
         return em.createNamedQuery("Restaurant.findByLocalisation", Restaurant.class)
@@ -171,7 +213,9 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     }
 
     /**
-     * Retourne tous les restaurants situés dans une ville donnée
+     * Méthode de recherche de restaurants en base de données par ville.
+     * @param cityName - nom de la ville du restaurant recherché
+     * @return la liste des restaurants trouvés
      */
     public Set<Restaurant> findByCity(String cityName) {
         EntityManager em = getEntityManager();
@@ -186,9 +230,10 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
         }
 
     /**
-     * Retourne tous les restaurants d'un type donné
+     * Méthode de recherche d'un restaurant en base de données par son type.
+     * @param label - type du restaurant recherché
+     * @return la liste des restaurants trouvés
      */
-
     public Set<Restaurant> findByRestaurantType(String label) {
         EntityManager em = getEntityManager();
         return new HashSet<>(
@@ -199,20 +244,6 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
                         .setParameter("label", label)
                         .getResultList()
         );
-    }
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT SEQ_RESTAURANTS.NEXTVAL FROM dual";
-    }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM RESTAURANTS WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM RESTAURANTS";
     }
   }
 

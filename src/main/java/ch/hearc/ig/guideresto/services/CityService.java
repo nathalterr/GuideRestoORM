@@ -9,10 +9,18 @@ import java.util.Set;
 
 public class CityService {
     private final CityMapper cityMapper = new CityMapper();
+    private static CityService instance;
 
-    public CityService() throws SQLException {
+    private CityService() throws SQLException {
     }
 
+    public static CityService getInstance() throws SQLException {
+        if (instance == null) {
+            instance = new CityService();
+        }
+        return instance;
+    }
+    public void setCityService(CityService cityService) {}
     public List<City> getAllCities() {
         return cityMapper.findAll();
     }

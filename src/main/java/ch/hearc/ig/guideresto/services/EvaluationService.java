@@ -20,8 +20,16 @@ public class EvaluationService {
     private final BasicEvaluationMapper basicEvaluationMapper = new BasicEvaluationMapper();
     private final CompleteEvaluationMapper completeEvaluationMapper = new CompleteEvaluationMapper();
     private final GradeMapper gradeMapper  = new GradeMapper();
+    private static EvaluationService instance;
 
-    public EvaluationService() throws SQLException {
+    private EvaluationService() throws SQLException {
+    }
+
+    public static EvaluationService getInstance() throws SQLException {
+        if (instance == null) {
+            instance = new EvaluationService();
+        }
+        return instance;
     }
 
     public BasicEvaluation addBasicEvaluation(Restaurant restaurant, Boolean like) {

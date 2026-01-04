@@ -1,31 +1,24 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
-import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.NoResultException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
-
-import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
-    private static final Logger logger = LoggerFactory.getLogger(RestaurantTypeMapper.class);
-
     public RestaurantTypeMapper() {
     }
 
+    /**
+     * Méthode de persistence en base de donnée
+     * @param type à ajouter en base
+     * @return l'objet RestaurantType créé, ou null en cas d'erreur
+     */
     @Override
     public RestaurantType create(RestaurantType type) {
         try (EntityManager em = getEntityManager()) {
@@ -44,12 +37,16 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
                 return type;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur create RestaurantType", e);
                 return null;
             }
         }
     }
 
+    /**
+     * Méthode de mise à jour en base de donnée
+     * @param type - l'objet RestaurantType à mettre à jour
+     * @return true si la mise à jour a réussi, false en cas d'erreur
+     */
     @Override
     public boolean update(RestaurantType type) {
         try (EntityManager em = getEntityManager()) {
@@ -61,12 +58,26 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
                 return true;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur update RestaurantType", e);
                 return false;
             }
         }
     }
+    /**
+     * Méthode de suppression en base de donnée
+     * @param type - l'objet RestaurantType à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
+    @Override
+    public boolean delete(RestaurantType type) {
+        if (type == null || type.getId() == null) return false;
+        return deleteById(type.getId());
+    }
 
+    /**
+     * Méthode de suppression en base de donnée
+     * @param id - identifiant du RestaurantType à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     @Override
     public boolean deleteById(Integer id) {
         try (EntityManager em = getEntityManager()) {
@@ -83,19 +94,16 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
                 return true;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur deleteById RestaurantType", e);
                 return false;
             }
         }
     }
 
-    @Override
-    public boolean delete(RestaurantType type) {
-        if (type == null || type.getId() == null) return false;
-        return deleteById(type.getId());
-    }
-
-
+    /**
+     * Méthode de recherche d'un type de restaurant en base de données par son identifiant.
+     * @param id - identifiant du type de restaurant recherché
+     * @return le type de restaurant trouvé, ou null s'il n'existe pas
+     */
     @Override
     public RestaurantType findById(Integer id) {
         if (id == null) return null;
@@ -111,6 +119,10 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         }
     }
 
+    /**
+     * Méthode de recherche de tous les types de restaurants en base de donnée
+     * @return la liste des types de restaurants trouvés
+     */
     @Override
     public List<RestaurantType> findAll() {
         try (EntityManager em = JpaUtils.getEntityManager()) {
@@ -119,22 +131,11 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         }
     }
 
-    public List<RestaurantType> findByLabel(String label) {
-        try (EntityManager em = JpaUtils.getEntityManager()) {
-            return em.createNamedQuery("RestaurantType.findByLabel", RestaurantType.class)
-                    .setParameter("label", "%" + label + "%")
-                    .getResultList();
-        }
-    }
-
-    public List<RestaurantType> findByDescription(String description) {
-        try (EntityManager em = JpaUtils.getEntityManager()) {
-            return em.createNamedQuery("RestaurantType.findByDescription", RestaurantType.class)
-                    .setParameter("description", "%" + description + "%")
-                    .getResultList();
-        }
-    }
-
+    /**
+     * Méthode de recherche de types de restaurants en base de données par nom
+     * @param name - nom du type
+     * @return la liste des types de restaurant trouvée
+     */
     public List<RestaurantType> findByName(String name) {
         if (name == null || name.isEmpty()) return List.of();
 
@@ -148,21 +149,23 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
         }
     }
 
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT SEQ_TYPES_GASTRONOMIQUES.NEXTVAL FROM dual";
+    /**
+     * Méthode de recherche de types de restaurants en base de données par description
+     * @param description - description du type
+     * @return la liste des types de restaurant trouvés
+     */
+    public List<RestaurantType> findByDescription(String description) {
+        try (EntityManager em = JpaUtils.getEntityManager()) {
+            return em.createNamedQuery("RestaurantType.findByDescription", RestaurantType.class)
+                    .setParameter("description", "%" + description + "%")
+                    .getResultList();
+        }
     }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM TYPES_GASTRONOMIQUES WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM TYPES_GASTRONOMIQUES";
-    }
-
+    /**
+     * Méthode de vérification d'existence de types de restaurants en base de données par nom
+     * @param name - nom du type
+     * @return true si un type est trouvé, false sinon
+     */
     public boolean existsByName(String name) {
         if (name == null || name.isEmpty()) return false;
 

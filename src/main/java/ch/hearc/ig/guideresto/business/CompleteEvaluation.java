@@ -23,7 +23,10 @@ import java.util.Set;
 )
 @NamedQuery(
         name = "CompleteEvaluation.findByRestaurant",
-        query = "SELECT ce FROM CompleteEvaluation ce WHERE ce.restaurant = :restaurant"
+        query = "SELECT DISTINCT ce FROM CompleteEvaluation ce " +
+                "LEFT JOIN FETCH ce.grades g " +
+                "LEFT JOIN FETCH g.criteria " +
+                "WHERE ce.restaurant = :restaurant"
 )
 
 @Table(name="COMMENTAIRES")
@@ -33,9 +36,9 @@ public class CompleteEvaluation extends Evaluation {
     private String comment;
     @Column(name="NOM_UTILISATEUR")
     private String username;
-    @OneToMany(mappedBy = "evaluation", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "evaluation", fetch = FetchType.EAGER) // évite des problèmes de LazyInitialisationException
     private Set<Grade> grades = new HashSet<>();
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_rest", nullable = false)
     private Restaurant restaurant;
 

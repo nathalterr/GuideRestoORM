@@ -16,7 +16,11 @@ import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria> {
     public EvaluationCriteriaMapper() {
     }
-
+    /**
+     * Méthode de persistence en base de donnée
+     * @param critere à ajouter en base
+     * @return l'objet EvaluationCriteria créé, ou null en cas d'erreur
+     */
     @Override
     public EvaluationCriteria create(EvaluationCriteria critere) {
         try (EntityManager em = getEntityManager()) {
@@ -28,12 +32,17 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                 return critere;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur create EvaluationCriteria", e);
+
                 return null;
             }
         }
     }
 
+    /**
+     * Méthode de mise à jour en base de donnée
+     * @param critere - l'objet EvaluationCriteria à mettre à jour
+     * @return true si la mise à jour a réussi, false en cas d'erreur
+     */
     @Override
     public boolean update(EvaluationCriteria critere) {
         try (EntityManager em = getEntityManager()) {
@@ -45,18 +54,26 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                 return true;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur update EvaluationCriteria", e);
+
                 return false;
             }
         }
     }
-
+    /**
+     * Méthode de suppression en base de donnée
+     * @param critere - l'objet EvaluationCriteria à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     @Override
     public boolean delete(EvaluationCriteria critere) {
         if (critere == null || critere.getId() == null) return false;
         return deleteById(critere.getId());
     }
-
+    /**
+     * Méthode de suppression en base de donnée
+     * @param id - identifiant de l'objet EvaluationCriteria à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     @Override
     public boolean deleteById(Integer id) {
         if (id == null) return false;
@@ -75,12 +92,16 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                 return true;
             } catch (Exception e) {
                 if (tx.isActive()) tx.rollback();
-                logger.error("Erreur deleteById EvaluationCriteria", e);
+
                 return false;
             }
         }
     }
-
+    /**
+     * Méthode de recherche d'un critère d'évaluation en base de données par son identifiant.
+     * @param id - identifiant du EvaluationCriteria recherché
+     * @return le critère d'évaluation trouvée, ou null s'il n'existe pas
+     */
     public EvaluationCriteria findById(Integer id) {
         if (id == null) return null;
 
@@ -95,13 +116,21 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
         }
     }
 
+    /**
+     * Méthode de recherche de tous les critères d'évaluations en base de données.
+     * @return la liste des critères d'évaluations trouvés
+     */
     public List<EvaluationCriteria> findAll() {
         try (EntityManager em = getEntityManager()) {
             return em.createNamedQuery("EvaluationCriteria.findAll", EvaluationCriteria.class)
                     .getResultList();
         }
     }
-
+    /**
+     * Méthode de recherche d'un critère d'évaluation en base de données par son nom.
+     * @param name - nom du critère d'évaluation recherché
+     * @return la liste des critères d'évaluations trouvés
+     */
     public List<EvaluationCriteria> findByName(String name) {
         if (name == null || name.isEmpty()) return List.of();
 
@@ -111,7 +140,11 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                     .getResultList();
         }
     }
-
+    /**
+     * Méthode de recherche d'un critère d'évaluation en base de données par sa description.
+     * @param description - description du critère d'évaluation recherché
+     * @return la liste des critères d'évaluations trouvés
+     */
     public List<EvaluationCriteria> findByDescription(String description) {
         if (description == null || description.isEmpty()) return List.of();
 
@@ -120,20 +153,5 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
                     .setParameter("description", "%" + description + "%")
                     .getResultList();
         }
-    }
-
-    @Override
-    protected String getSequenceQuery() {
-        return "SELECT SEQ_CRITERES_EVALUATION.NEXTVAL FROM dual";
-    }
-
-    @Override
-    protected String getExistsQuery() {
-        return "SELECT 1 FROM CRITERES_EVALUATION WHERE numero = ?";
-    }
-
-    @Override
-    protected String getCountQuery() {
-        return "SELECT COUNT(*) FROM CRITERES_EVALUATION";
     }
 }

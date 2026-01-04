@@ -7,7 +7,6 @@
         <description>
             Persistence unit for the GuideResto project.
         </description>
-
         <class>ch.hearc.ig.guideresto.business.BasicEvaluation</class>
         <class>ch.hearc.ig.guideresto.business.City</class>
         <class>ch.hearc.ig.guideresto.business.CompleteEvaluation</class>
@@ -17,5 +16,7 @@
         <class>ch.hearc.ig.guideresto.business.Localisation</class>
         <class>ch.hearc.ig.guideresto.business.Restaurant</class>
         <class>ch.hearc.ig.guideresto.business.RestaurantType</class>
+
     </persistence-unit>
+
 </persistence>

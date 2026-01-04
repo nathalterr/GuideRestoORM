@@ -24,7 +24,7 @@ public class ConnectionUtils {
             config.setJdbcUrl(url);
             config.setUsername(username);
             config.setPassword(password);
-            config.setMaximumPoolSize(60); // max 5 connexions simultanées HIHIHI ALED
+            config.setMaximumPoolSize(5); // max 5 connexions simultanées
 
             dataSource = new HikariDataSource(config);
 
@@ -40,4 +40,5 @@ public class ConnectionUtils {
     public static void closePool() {
         if (dataSource != null) dataSource.close();
     }
+
 }

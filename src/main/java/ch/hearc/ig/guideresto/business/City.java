@@ -16,10 +16,6 @@ import java.util.Set;
 )
 
 @NamedQuery(
-        name = "City.findByCityName",
-        query = "SELECT c FROM City c WHERE c.cityName LIKE :name"
-)
-@NamedQuery(
         name = "City.findByName",
         query = "SELECT c FROM City c WHERE LOWER(c.cityName) = LOWER(:name)"
 )

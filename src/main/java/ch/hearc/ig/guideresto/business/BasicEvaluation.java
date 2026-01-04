@@ -54,26 +54,47 @@ public class BasicEvaluation extends Evaluation {
         this.ipAddress = ipAddress;
     }
 
+    /**
+     * Méthode permettant d'obtenir la valeur de l'évaluation basique
+     * @return valeur de l'évaluation basique en question
+     */
     public Boolean getLikeRestaurant() {
         return likeRestaurant;
     }
 
+    /**
+     * Méthode qui assigne la valeur de l'évaluation
+     * @param likeRestaurant - true = like, false=dislike
+     */
     public void setLikeRestaurant(Boolean likeRestaurant) {
         this.likeRestaurant = likeRestaurant;
     }
-
+    /**
+     * Méthode permettant d'obtenir l'adresse ip de l'utilisateur à la base de l'évaluation basique
+     * @return l'adresse ip de l'user
+     */
     public String getIpAddress() {
         return ipAddress;
     }
-
+    /**
+     * Méthode qui assigne l'adresse ip de l'user à l'évaluation
+     * @param ipAddress - adresse IP de l'user
+     */
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }
-
+    /**
+     * Méthode permettant d'obtenir l'identifiant de l'évaluation basique
+     * @return l'id de l'évaluation basique
+     */
     @Override
     public Integer getId() {
         return super.getId();
     }
+    /**
+     * Méthode qui assigne l'identifiant de l'évaluation basique
+     * @param generatedId - l'id de l'évaluation basique
+     */
     @Override
     public void setId(Integer generatedId) {super.setId(generatedId);}
 }

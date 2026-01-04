@@ -13,8 +13,16 @@ import java.util.Set;
 
 public class RestaurantService {
     private final RestaurantMapper restaurantMapper = new RestaurantMapper();
+    private static RestaurantService instance;
 
-    public RestaurantService() throws SQLException {
+    private RestaurantService() throws SQLException {
+    }
+
+    public static RestaurantService getInstance() throws SQLException {
+        if (instance == null) {
+            instance = new RestaurantService();
+        }
+        return instance;
     }
 
     public List<Restaurant> getAllRestaurants() {
@@ -42,7 +50,7 @@ public class RestaurantService {
 
     public List<Restaurant> findRestaurantsByType(String typeLabel) {
         RestaurantTypeMapper typeMapper = new RestaurantTypeMapper();
-        List<RestaurantType> types = typeMapper.findByLabel(typeLabel);
+        List<RestaurantType> types = typeMapper.findByName(typeLabel);
 
         RestaurantType type = types.get(0); // prend le premier élément
         List<Restaurant> all = restaurantMapper.findAll();

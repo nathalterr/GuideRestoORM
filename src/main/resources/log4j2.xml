@@ -1,42 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration xmlns="https://logging.apache.org/xml/ns"
-               xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-               xsi:schemaLocation="
-                   https://logging.apache.org/xml/ns
-                   https://logging.apache.org/xml/ns/log4j-config-2.xsd">
-
+<Configuration status="WARN">
     <Appenders>
-        <!-- Console principale : juste ton app, pas le SQL -->
         <Console name="CONSOLE" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <PatternLayout pattern="%d{HH:mm:ss} [%t] %-5level %logger{36} - %msg%n"/>
         </Console>
-
-        <!-- Fichier debug complet -->
-        <File name="DEBUG_LOG" fileName="logs/debug.log">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
-        </File>
     </Appenders>
 
     <Loggers>
-        <!-- Hibernate SQL : on le met dans le fichier debug mais pas en console -->
-        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-            <AppenderRef ref="DEBUG_LOG"/>
-        </Logger>
-
-        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE" additivity="false">
-            <AppenderRef ref="DEBUG_LOG"/>
-        </Logger>
-
-        <!-- Ton app -->
+        <!-- Tout ce qui vient de notre code -->
         <Logger name="ch.hearc.ig.guideresto" level="DEBUG" additivity="false">
             <AppenderRef ref="CONSOLE"/>
-            <AppenderRef ref="DEBUG_LOG"/>
         </Logger>
 
-        <Root level="WARN">
+        <!-- Hibernate silencieux sauf WARN/ERROR -->
+        <Logger name="org.hibernate" level="WARN"/>
+        <Logger name="org.hibernate.SQL" level="WARN"/>
+        <Logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="WARN"/>
+        <Logger name="org.hibernate.orm.connections.pooling" level="error"/>
+
+        <!-- Racine -->
+        <Root level="INFO">
             <AppenderRef ref="CONSOLE"/>
-            <AppenderRef ref="DEBUG_LOG"/>
         </Root>
     </Loggers>
-
 </Configuration>
