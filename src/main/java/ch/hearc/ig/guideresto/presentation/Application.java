@@ -28,7 +28,7 @@ public class Application {
             try {
                 proceedMainMenu(choice);
             } catch (SQLException e) {
-                System.out.println(e.getMessage());
+                System.out.println("An internal database error occurred. Please retry or contact support." +  e);
             }
         } while (choice != 0);
     }
@@ -72,6 +72,7 @@ public class Application {
             case 0:
                 System.out.println("Au revoir !");
                 closePool();
+                scanner.close();
                 break;
             default:
                 System.out.println("Erreur : saisie incorrecte. Veuillez réessayer");
@@ -388,28 +389,12 @@ public class Application {
             e.printStackTrace();
         }
     }
-    /**
-     * Parcourt la liste et compte le nombre d'évaluations basiques positives ou négatives en fonction du paramètre likeRestaurant
-     *
-     * @param evaluations    La liste des évaluations à parcourir
-     * @param likeRestaurant Veut-on le nombre d'évaluations positives ou négatives ?
-     * @return Le nombre d'évaluations positives ou négatives trouvées
-     */
-    private static int countLikes(Set<BasicEvaluation> evaluations, Boolean likeRestaurant) {
-        int count = 0;
-        for (Evaluation currentEval : evaluations) {
-            if (currentEval instanceof BasicEvaluation && ((BasicEvaluation) currentEval).getLikeRestaurant() == likeRestaurant) {
-                count++;
-            }
-        }
-        return count;
-    }
 
     /**
-     * Retourne un String qui contient le détail complet d'une évaluation si elle est de type "CompleteEvaluation". Retourne null s'il s'agit d'une BasicEvaluation
+     * Retourne un String qui contient le détail complet d'une évaluation si elle est de type "CompleteEvaluation". Retourne un String vide s'il s'agit d'une BasicEvaluation
      *
      * @param eval L'évaluation à afficher
-     * @return Un String qui contient le détail complet d'une CompleteEvaluation, ou null s'il s'agit d'une BasicEvaluation
+     * @return Un String qui contient le détail complet d'une CompleteEvaluation, ou un String vide s'il s'agit d'une BasicEvaluation
      */
     private static String getCompleteEvaluationDescription(Evaluation eval) {
         StringBuilder result = new StringBuilder();
@@ -482,8 +467,7 @@ public class Application {
      * @param like       Est-ce un like ou un dislike ?
      */
     private static void addBasicEvaluation(Restaurant restaurant, Boolean like) throws SQLException {
-        Restaurant myRestaurant = RestaurantService.getInstance().getAllRestaurants().iterator().next();
-        EvaluationService.getInstance().addBasicEvaluation(myRestaurant, like);
+        EvaluationService.getInstance().addBasicEvaluation(restaurant, like);
         System.out.println("Votre vote a été pris en compte !");
     }
 
@@ -494,27 +478,40 @@ public class Application {
      */
     private static void evaluateRestaurant(Restaurant restaurant) throws SQLException {
         System.out.print("Nom d'utilisateur : ");
-        String username = readString();
+        String username = readString().trim();
 
         System.out.print("Commentaire : ");
-        String comment = readString();
+        String comment = readString().trim();
 
-        // Lire les notes pour chaque critère
+        Map<EvaluationCriteria, Integer> notes = readGrades();
+
+        EvaluationService.getInstance().addCompleteEvaluation(restaurant, username, comment, notes);
+
+        System.out.println("✅ Évaluation enregistrée avec succès !");
+    }
+
+    private static Map<EvaluationCriteria, Integer> readGrades() throws SQLException {
         Map<EvaluationCriteria, Integer> notes = new HashMap<>();
-        List<EvaluationCriteria> criteres = new EvaluationCriteriaMapper().findAll();
+
+        List<EvaluationCriteria> criteres = EvaluationService.getInstance().getAllCriteria();
+        if (criteres.isEmpty()) {
+            System.out.println("Aucun critère d'évaluation disponible.");
+            return notes;
+        }
+
         for (EvaluationCriteria crit : criteres) {
             int note;
             do {
                 System.out.print(crit.getName() + " (1-5) : ");
                 note = readInt();
+                if (note < 1 || note > 5) {
+                    System.out.println("Veuillez entrer une valeur entre 1 et 5.");
+                }
             } while (note < 1 || note > 5);
             notes.put(crit, note);
         }
 
-        // Déleguer au service Evaluation
-        EvaluationService.getInstance().addCompleteEvaluation(restaurant, username, comment, notes);
-
-        System.out.println("✅ Évaluation enregistrée avec succès !");
+        return notes;
     }
 
 

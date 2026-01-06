@@ -2,10 +2,7 @@ package ch.hearc.ig.guideresto.services;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
-import ch.hearc.ig.guideresto.persistence.mapper.BasicEvaluationMapper;
-import ch.hearc.ig.guideresto.persistence.mapper.CompleteEvaluationMapper;
-import ch.hearc.ig.guideresto.persistence.mapper.GradeMapper;
-import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
+import ch.hearc.ig.guideresto.persistence.mapper.*;
 import jakarta.persistence.EntityManager;
 
 import java.net.Inet4Address;
@@ -14,12 +11,12 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class EvaluationService {
     private final BasicEvaluationMapper basicEvaluationMapper = new BasicEvaluationMapper();
     private final CompleteEvaluationMapper completeEvaluationMapper = new CompleteEvaluationMapper();
     private final GradeMapper gradeMapper  = new GradeMapper();
+    private final EvaluationCriteriaMapper evalCriteriaMapper = new EvaluationCriteriaMapper();
     private static EvaluationService instance;
 
     private EvaluationService() throws SQLException {
@@ -81,10 +78,20 @@ public class EvaluationService {
     public List<CompleteEvaluation> getCompleteEvaluations(Restaurant restaurant) {
         return completeEvaluationMapper.findByRestaurant(restaurant);
     }
+    /**
+     * Parcourt la liste et compte le nombre d'évaluations basiques positives ou négatives en fonction du paramètre likeRestaurant
+     *
+     * @param evaluations    La liste des évaluations à parcourir
+     * @param like Veut-on le nombre d'évaluations positives ou négatives ?
+     * @return Le nombre d'évaluations positives ou négatives trouvées
+     */
     public long countLikes(List<BasicEvaluation> evaluations, boolean like) {
         return evaluations.stream()
                 .filter(be -> be.getLikeRestaurant() != null && be.getLikeRestaurant() == like)
                 .count();
+    }
+    public List<EvaluationCriteria> getAllCriteria() throws SQLException {
+        return evalCriteriaMapper.findAll();
     }
 
 
