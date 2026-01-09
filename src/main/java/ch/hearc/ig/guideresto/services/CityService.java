@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.services;
 
 import ch.hearc.ig.guideresto.business.City;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.CityMapper;
 
 import java.sql.SQLException;
@@ -36,15 +37,32 @@ public class CityService {
 
     public City addCity(String name, String zipCode) {
         City city = new City(null, zipCode, name);
-        return cityMapper.create(city);
+        JpaUtils.inTransaction(em -> {
+            cityMapper.create(city);});
+        return cityMapper.findById(city.getId());
     }
 
     public City addOrGetCity(String cityName, String postalCode) throws SQLException {
         City city = cityMapper.findByName(cityName);
         if (city == null) {
             city = new City(null, postalCode, cityName);
-            cityMapper.create(city);
+            City finalCity = city;
+            JpaUtils.inTransaction(em -> {
+            cityMapper.create(finalCity);
+            });
         }
-        return city;
+        return cityMapper.findByName(cityName);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
