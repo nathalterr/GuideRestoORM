@@ -22,6 +22,11 @@ public class EvaluationService {
     private EvaluationService() throws SQLException {
     }
 
+    /**
+     * Singleton pattern
+     * @return instance unique de la classe EvaluationService - créée si elle n'existe pas encore
+     * @throws SQLException - en cas de problème de connexion à la base de données
+     */
     public static EvaluationService getInstance() throws SQLException {
         if (instance == null) {
             instance = new EvaluationService();
@@ -29,19 +34,34 @@ public class EvaluationService {
         return instance;
     }
 
-    public BasicEvaluation addBasicEvaluation(Restaurant restaurant, Boolean like) {
-        if (restaurant == null || like == null) return null;
+    /**
+     * Ajouter une évaluation basique pour un restaurant
+     * @param restaurant - le restaurant évalué
+     * @param likeRestaurant - true si le restaurant est aimé, false sinon
+     * @return l'évaluation basique créée, ou null en cas d'erreur
+     */
+    public BasicEvaluation addBasicEvaluation(Restaurant restaurant, Boolean likeRestaurant) {
+        if (restaurant == null || likeRestaurant == null) return null;
         String ip;
         try {
             ip = Inet4Address.getLocalHost().toString();
         } catch (UnknownHostException e) {
             ip = "Indisponible";
         }
-        BasicEvaluation eval = new BasicEvaluation(null, new Date(), restaurant, like, ip);
+        BasicEvaluation eval = new BasicEvaluation(null, new Date(), restaurant, likeRestaurant, ip);
         basicEvaluationMapper.create(eval);
         restaurant.getEvaluations().add(eval);
         return eval;
     }
+
+    /**
+     * Ajouter une évaluation complète pour un restaurant
+     * @param restaurant - le restaurant évalué
+     * @param username - le nom d'utilisateur de l'évaluateur
+     * @param comment - le commentaire de l'évaluation
+     * @param notes - la carte des critères d'évaluation et leurs notes associées
+     * @return
+     */
 
     public CompleteEvaluation addCompleteEvaluation(Restaurant restaurant, String username,
                                                     String comment, Map<EvaluationCriteria, Integer> notes) {
@@ -62,6 +82,11 @@ public class EvaluationService {
         return eval;
     }
 
+    /**
+     * Récupérer toutes les évaluations basiques d'un restaurant
+     * @param restaurant - le restaurant dont on veut les évaluations
+     * @return la liste des évaluations basiques
+     */
     public List<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) {
         if (restaurant == null) return List.of();
 
@@ -75,9 +100,15 @@ public class EvaluationService {
         }
     }
 
+    /**
+     * Récupérer toutes les évaluations complètes d'un restaurant
+     * @param restaurant - le restaurant dont on veut les évaluations
+     * @return la liste des évaluations complètes
+     */
     public List<CompleteEvaluation> getCompleteEvaluations(Restaurant restaurant) {
         return completeEvaluationMapper.findByRestaurant(restaurant);
     }
+
     /**
      * Parcourt la liste et compte le nombre d'évaluations basiques positives ou négatives en fonction du paramètre likeRestaurant
      *
@@ -90,6 +121,12 @@ public class EvaluationService {
                 .filter(be -> be.getLikeRestaurant() != null && be.getLikeRestaurant() == like)
                 .count();
     }
+
+    /**
+     * Récupérer tous les critères d'évaluation
+     * @return la liste des critères d'évaluation
+     * @throws SQLException - en cas de problème de connexion à la base de données
+     */
     public List<EvaluationCriteria> getAllCriteria() throws SQLException {
         return evalCriteriaMapper.findAll();
     }

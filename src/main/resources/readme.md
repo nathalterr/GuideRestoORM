@@ -10,10 +10,7 @@ Il reste :
 
 Questions : 
 - Verrous
-  - InTransaction
-- Cache
-- Logging SQL
-- Javadoc - a quel niveau de détail on va ?
+  - InTransaction ?
 
 
 public static void inTransaction(Consumer<EntityManager> consumer) {
