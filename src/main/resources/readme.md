@@ -10,7 +10,7 @@ Il reste :
 - Vérifier que les évals sont bien supprimées lorsque le resto est supprimé (cascade?)
 Questions : 
 - Verrous
-  - InTransaction
+  - InTransaction ?
 
 
 public static void inTransaction(Consumer<EntityManager> consumer) {

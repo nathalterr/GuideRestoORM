@@ -26,26 +26,45 @@ public class CityService {
         return cityMapper.findAll();
     }
 
-    public City findCityByName(String name) {
+    /**
+     * Trouver une ville par son nom
+     * @param cityName - le nom de la ville
+     * @return la ville trouvée, ou null si aucune ville ne correspond ou en cas d'erreur
+     */
+    public City findCityByName(String cityName) {
         try {
-            return cityMapper.findByName(name);
+            return cityMapper.findByName(cityName);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
     }
 
-    public City addCity(String name, String zipCode) {
-        City city = new City(null, zipCode, name);
+    /**
+     * Ajouter une nouvelle ville
+     * @param cityName - le nom de la ville
+     * @param zipCode - le code postal de la ville
+     * @return la ville créée, ou null en cas d'erreur
+     */
+    public City addCity(String cityName, String zipCode) {
+        City city = new City(null, zipCode, cityName);
         JpaUtils.inTransaction(em -> {
             cityMapper.create(city);});
         return cityMapper.findById(city.getId());
     }
 
-    public City addOrGetCity(String cityName, String postalCode) throws SQLException {
+
+    /**
+     * Ajouter une ville si elle n'existe pas déjà, sinon la récupérer
+     * @param cityName - le nom de la ville
+     * @param zipCode - le code postal de la ville
+     * @return la ville existante ou nouvellement créée
+     * @throws SQLException - en cas d'erreur de base de données
+     */
+    public City addOrGetCity(String cityName, String zipCode) throws SQLException {
         City city = cityMapper.findByName(cityName);
         if (city == null) {
-            city = new City(null, postalCode, cityName);
+            city = new City(null, zipCode, cityName);
             City finalCity = city;
             JpaUtils.inTransaction(em -> {
             cityMapper.create(finalCity);
@@ -54,15 +73,3 @@ public class CityService {
         return cityMapper.findByName(cityName);
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-

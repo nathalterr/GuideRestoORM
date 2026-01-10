@@ -18,6 +18,11 @@ public class RestaurantService {
     private RestaurantService() throws SQLException {
     }
 
+    /**
+     * Singleton pattern pour obtenir une instance unique de RestaurantService
+     * @return l'instance de RestaurantService
+     * @throws SQLException en cas d'erreur de base de données
+     */
     public static RestaurantService getInstance() throws SQLException {
         if (instance == null) {
             instance = new RestaurantService();
@@ -25,14 +30,31 @@ public class RestaurantService {
         return instance;
     }
 
+    /**
+     * Affiche une liste de tous les restaurants
+     * @return liste de tous les restaurants
+     */
     public List<Restaurant> getAllRestaurants() {
         return restaurantMapper.findAll();
     }
 
+    /**
+     * Trouver des restaurants par leur nom
+     * @param name - le nom du restaurant
+     * @return la liste des restaurants trouvés
+     * @throws SQLException en cas d'erreur de base de données
+     */
     public List<Restaurant> findRestaurantsByName(String name) throws SQLException {
         return restaurantMapper.findByName(name);
     }
     //Celle ci doit retourner qu'un resto car elle doit isoler un seul resto
+    /**
+     * Trouver un restaurant par son nom dans une liste donnée
+     * @param restaurants - la liste des restaurants à rechercher
+     * @param name - le nom du restaurant
+     * @return le restaurant trouvé, ou null s'il n'existe pas
+     * @throws SQLException en cas d'erreur de base de données
+     */
     public Restaurant findRestaurantsByName(List<Restaurant> restaurants, String name) throws SQLException {
         for (Restaurant r : restaurants) {
             if (r.getName().equalsIgnoreCase(name)) {
@@ -42,15 +64,25 @@ public class RestaurantService {
         return null;
     }
 
+    /**
+    * Trouver des restaurants par une partie de nom de ville
+    * @param cityPart - partie du nom de la ville
+    * @return la liste des restaurants trouvés
+     */
     public List<Restaurant> findRestaurantsByCity(String cityPart) {
         List<Restaurant> all = restaurantMapper.findAll();
         all.removeIf(r -> !r.getAddress().getCity().getCityName().toLowerCase().contains(cityPart.toLowerCase()));
         return all;
     }
 
-    public List<Restaurant> findRestaurantsByType(String typeLabel) {
+    /**
+     * Trouver des restaurants par type
+     * @param label - le type de restaurant
+     * @return la liste des restaurants trouvés
+     */
+    public List<Restaurant> findRestaurantsByType(String label) {
         RestaurantTypeMapper typeMapper = new RestaurantTypeMapper();
-        List<RestaurantType> types = typeMapper.findByName(typeLabel);
+        List<RestaurantType> types = typeMapper.findByName(label);
 
         RestaurantType type = types.get(0); // prend le premier élément
         List<Restaurant> all = restaurantMapper.findAll();
@@ -58,25 +90,63 @@ public class RestaurantService {
         return all;
     }
 
-
+    /**
+     * Ajouter un nouveau restaurant
+     * @param name - le nom du restaurant
+     * @param description - la description du restaurant
+     * @param website - le site web du restaurant
+     * @param street - la rue du restaurant
+     * @param city - la ville du restaurant
+     * @param restaurantType - le type de restaurant
+     * @return le restaurant créé
+     */
     public Restaurant addRestaurant(String name, String description, String website,
-                                    String street, City city, RestaurantType type) {
-        Restaurant restaurant = new Restaurant(null, name, description, website, street, city, type);
+                                    String street, City city, RestaurantType restaurantType) {
+        Restaurant restaurant = new Restaurant(null, name, description, website, street, city, restaurantType);
         return restaurantMapper.create(restaurant);
     }
 
+    /**
+     * Mettre à jour un restaurant existant
+     * @param restaurant - le restaurant à mettre à jour
+     * @return true si la mise à jour a réussi, false sinon
+     */
     public boolean updateRestaurant(Restaurant restaurant) {
         return restaurantMapper.update(restaurant);
     }
 
+    /**
+     * Mettre à jour l'adresse d'un restaurant
+     * @param restaurant - le restaurant à mettre à jour
+     * @param newStreet - la nouvelle rue
+     * @param city - la nouvelle ville
+     * @return true si la mise à jour a réussi, false sinon
+     * @throws SQLException en cas d'erreur de base de données
+     */
     public boolean updateRestaurantAddress(Restaurant restaurant, String newStreet, City city) throws SQLException {
         return restaurantMapper.updateAddress(restaurant, newStreet, city);
     }
 
+    /**
+     * Supprimer un restaurant
+     * @param restaurant - le restaurant à supprimer
+     * @return true si la suppression a réussi, false sinon
+     */
     public boolean deleteRestaurant(Restaurant restaurant) {
         return restaurantMapper.delete(restaurant);
     }
 
+    /**
+     * Mettre à jour les détails d'un restaurant
+     * @param restaurant
+     * @param newName
+     * @param newDescription
+     * @param newWebsite
+     * @param newType
+     * @param newStreet
+     * @param newCity
+     * @return
+     */
     public boolean updateRestaurantDetails(Restaurant restaurant, String newName, String newDescription,
                                            String newWebsite, RestaurantType newType,
                                            String newStreet, City newCity) {
