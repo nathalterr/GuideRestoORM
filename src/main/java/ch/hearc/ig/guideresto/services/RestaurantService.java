@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.services;
 import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
 
@@ -103,7 +104,11 @@ public class RestaurantService {
     public Restaurant addRestaurant(String name, String description, String website,
                                     String street, City city, RestaurantType restaurantType) {
         Restaurant restaurant = new Restaurant(null, name, description, website, street, city, restaurantType);
-        return restaurantMapper.create(restaurant);
+
+        JpaUtils.inTransaction(em -> {
+            restaurantMapper.create(restaurant);
+        });
+        return restaurantMapper.findById(restaurant.getId());
     }
 
     /**
@@ -112,7 +117,10 @@ public class RestaurantService {
      * @return true si la mise à jour a réussi, false sinon
      */
     public boolean updateRestaurant(Restaurant restaurant) {
-        return restaurantMapper.update(restaurant);
+        JpaUtils.inTransaction(em -> {
+            restaurantMapper.update(restaurant);
+        });
+        return true;
     }
 
     /**
@@ -124,8 +132,13 @@ public class RestaurantService {
      * @throws SQLException en cas d'erreur de base de données
      */
     public boolean updateRestaurantAddress(Restaurant restaurant, String newStreet, City city) throws SQLException {
-        return restaurantMapper.updateAddress(restaurant, newStreet, city);
+        JpaUtils.inTransaction(em -> {
+            restaurantMapper.updateAddress(restaurant, newStreet, city);
+        });
+        return restaurant.getAddress().getCity().equals(city)
+                && restaurant.getAddress().getStreet().equals(newStreet);
     }
+
 
     /**
      * Supprimer un restaurant
@@ -133,7 +146,10 @@ public class RestaurantService {
      * @return true si la suppression a réussi, false sinon
      */
     public boolean deleteRestaurant(Restaurant restaurant) {
-        return restaurantMapper.delete(restaurant);
+        JpaUtils.inTransaction(em -> {
+            restaurantMapper.delete(restaurant);
+        });
+        return restaurantMapper.findById(restaurant.getId()) == null;
     }
 
     /**
@@ -160,7 +176,10 @@ public class RestaurantService {
         }
         restaurant.getAddress().setStreet(newStreet);
         restaurant.getAddress().setCity(newCity);
+        JpaUtils.inTransaction(em -> {
+            restaurantMapper.update(restaurant);
+        });
 
-        return restaurantMapper.update(restaurant);
+        return true;
     }
 }

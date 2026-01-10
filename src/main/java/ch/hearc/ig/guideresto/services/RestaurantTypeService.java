@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.services;
 
 import ch.hearc.ig.guideresto.business.RestaurantType;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
 
 import java.sql.SQLException;
@@ -27,7 +28,10 @@ public class RestaurantTypeService {
 
     public RestaurantType addType(String label, String description) {
         RestaurantType type = new RestaurantType(null, label, description);
-        return typeMapper.create(type);
+        JpaUtils.inTransaction(em -> {
+            typeMapper.create(type);
+        });
+        return type;
     }
 
     public List<RestaurantType> findByLabel(String label) {

@@ -8,6 +8,7 @@ Il reste :
 - Mettre en place le InTransaction (va avec Verrous)
 - faire le trigger (ptet genre avec les bails de si machin j'incrémente, sinon non)
 - Vérifier que les évals sont bien supprimées lorsque le resto est supprimé (cascade?)
+- setCityService
 Questions : 
 - Verrous
   - InTransaction ?

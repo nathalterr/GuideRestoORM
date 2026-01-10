@@ -49,7 +49,9 @@ public class EvaluationService {
             ip = "Indisponible";
         }
         BasicEvaluation eval = new BasicEvaluation(null, new Date(), restaurant, likeRestaurant, ip);
-        basicEvaluationMapper.create(eval);
+        JpaUtils.inTransaction(em -> {
+            basicEvaluationMapper.create(eval);
+        });
         restaurant.getEvaluations().add(eval);
         return eval;
     }
@@ -72,11 +74,12 @@ public class EvaluationService {
             Grade grade = new Grade(null, entry.getValue(), eval, entry.getKey());
             eval.getGrades().add(grade);
         }
-
-        completeEvaluationMapper.create(eval);
-        for (Grade g : eval.getGrades()) {
-            gradeMapper.create(g);
-        }
+        JpaUtils.inTransaction(em -> {
+            completeEvaluationMapper.create(eval);
+            for (Grade g : eval.getGrades()) {
+                gradeMapper.create(g);
+            }
+        });
 
         restaurant.getEvaluations().add(eval);
         return eval;
@@ -130,6 +133,4 @@ public class EvaluationService {
     public List<EvaluationCriteria> getAllCriteria() throws SQLException {
         return evalCriteriaMapper.findAll();
     }
-
-
 }
