@@ -6,8 +6,9 @@ import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
-import java.sql.*;
-import java.util.*;
+
+import java.util.List;
+
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria> {

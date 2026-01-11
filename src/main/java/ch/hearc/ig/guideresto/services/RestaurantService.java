@@ -1,9 +1,12 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.business.City;
+import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
+
 import java.sql.SQLException;
 import java.util.List;
 

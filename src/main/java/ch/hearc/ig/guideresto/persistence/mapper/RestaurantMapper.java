@@ -1,10 +1,17 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
-import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.business.City;
+import ch.hearc.ig.guideresto.business.Localisation;
+import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
-import java.util.*;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 

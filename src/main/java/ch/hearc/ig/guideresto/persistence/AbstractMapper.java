@@ -3,8 +3,10 @@ package ch.hearc.ig.guideresto.persistence;
 import ch.hearc.ig.guideresto.business.IBusinessObject;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
+
 import java.sql.SQLException;
 import java.util.List;
+
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public abstract class AbstractMapper<T extends IBusinessObject> {

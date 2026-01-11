@@ -6,7 +6,9 @@ import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
-import java.util.*;
+
+import java.util.List;
+
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {

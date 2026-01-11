@@ -6,7 +6,8 @@ import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
-import java.util.*;
+
+import java.util.List;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
