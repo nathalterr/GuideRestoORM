@@ -10,7 +10,6 @@ import jakarta.persistence.EntityManager;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
-import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -24,15 +23,14 @@ public class EvaluationService {
     private final EvaluationCriteriaMapper evalCriteriaMapper = new EvaluationCriteriaMapper();
     private static EvaluationService instance;
 
-    private EvaluationService() throws SQLException {
+    private EvaluationService() {
     }
 
     /**
      * Singleton pattern
-     * @return instance unique de la classe EvaluationService - créée si elle n'existe pas encore
-     * @throws SQLException - en cas de problème de connexion à la base de données
+     * @return instance unique de la classe EvaluationService — créée si elle n'existe pas encore
      */
-    public static EvaluationService getInstance() throws SQLException {
+    public static EvaluationService getInstance() {
         if (instance == null) {
             instance = new EvaluationService();
         }
@@ -67,7 +65,7 @@ public class EvaluationService {
      * @param username - le nom d'utilisateur de l'évaluateur
      * @param comment - le commentaire de l'évaluation
      * @param notes - la carte des critères d'évaluation et leurs notes associées
-     * @return
+     * @return CompleteEvaluation ajoutée, ou null en cas d'erreur
      */
 
     public CompleteEvaluation addCompleteEvaluation(Restaurant restaurant, String username,
@@ -98,13 +96,10 @@ public class EvaluationService {
     public List<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) {
         if (restaurant == null) return List.of();
 
-        EntityManager em = getEntityManager();
-        try {
+        try (EntityManager em = getEntityManager()) {
             return em.createNamedQuery("BasicEvaluation.findByRestaurant", BasicEvaluation.class)
                     .setParameter("restaurant", restaurant)
                     .getResultList();
-        } finally {
-            em.close();
         }
     }
 
@@ -133,9 +128,8 @@ public class EvaluationService {
     /**
      * Récupérer tous les critères d'évaluation
      * @return la liste des critères d'évaluation
-     * @throws SQLException - en cas de problème de connexion à la base de données
      */
-    public List<EvaluationCriteria> getAllCriteria() throws SQLException {
+    public List<EvaluationCriteria> getAllCriteria() {
         return evalCriteriaMapper.findAll();
     }
 

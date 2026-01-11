@@ -1,9 +1,5 @@
 package ch.hearc.ig.guideresto.business;
 
-/**
- * @author cedric.baudet
- */
-
 import jakarta.persistence.*;
 
 import java.util.Date;
@@ -37,7 +33,7 @@ public class CompleteEvaluation extends Evaluation {
     @Column(name="NOM_UTILISATEUR")
     private String username;
     @OneToMany(mappedBy = "evaluation", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true) // évite des problèmes de LazyInitialisationException
-    private Set<Grade> grades = new HashSet<>();
+    private Set<Grade> grades;
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_rest", nullable = false)
     private Restaurant restaurant;
@@ -54,7 +50,7 @@ public class CompleteEvaluation extends Evaluation {
         super(id, visitDate, restaurant);
         this.comment = comment;
         this.username = username;
-        this.grades = new HashSet();
+        this.grades = new HashSet<>();
     }
 
     public String getComment() {

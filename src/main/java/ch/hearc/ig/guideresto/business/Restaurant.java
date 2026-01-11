@@ -60,7 +60,7 @@ public class Restaurant implements IBusinessObject {
     @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BasicEvaluation> basicEvaluations;
     @Embedded
-    private Localisation address; // ATTENTION, resto stocke une rue en String (adresse dans bd) et une fk pour la ville : fk_vill
+    private Localisation address;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fk_type")
     private RestaurantType type;

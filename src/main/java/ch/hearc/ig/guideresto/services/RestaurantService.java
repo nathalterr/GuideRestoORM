@@ -6,23 +6,20 @@ import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
-
-import java.sql.SQLException;
 import java.util.List;
 
 public class RestaurantService {
     private final RestaurantMapper restaurantMapper = new RestaurantMapper();
     private static RestaurantService instance;
 
-    private RestaurantService() throws SQLException {
+    private RestaurantService(){
     }
 
     /**
      * Singleton pattern pour obtenir une instance unique de RestaurantService
      * @return l'instance de RestaurantService
-     * @throws SQLException en cas d'erreur de base de données
      */
-    public static RestaurantService getInstance() throws SQLException {
+    public static RestaurantService getInstance() {
         if (instance == null) {
             instance = new RestaurantService();
         }
@@ -41,9 +38,8 @@ public class RestaurantService {
      * Trouver des restaurants par leur nom
      * @param name - le nom du restaurant
      * @return la liste des restaurants trouvés
-     * @throws SQLException en cas d'erreur de base de données
      */
-    public List<Restaurant> findRestaurantsByName(String name) throws SQLException {
+    public List<Restaurant> findRestaurantsByName(String name) {
         return restaurantMapper.findByName(name);
     }
     //Celle ci doit retourner qu'un resto car elle doit isoler un seul resto
@@ -52,9 +48,8 @@ public class RestaurantService {
      * @param restaurants - la liste des restaurants à rechercher
      * @param name - le nom du restaurant
      * @return le restaurant trouvé, ou null s'il n'existe pas
-     * @throws SQLException en cas d'erreur de base de données
      */
-    public Restaurant findRestaurantsByName(List<Restaurant> restaurants, String name) throws SQLException {
+    public Restaurant findRestaurantsByName(List<Restaurant> restaurants, String name)  {
         for (Restaurant r : restaurants) {
             if (r.getName().equalsIgnoreCase(name)) {
                 return r;
@@ -83,7 +78,7 @@ public class RestaurantService {
         RestaurantTypeMapper typeMapper = new RestaurantTypeMapper();
         List<RestaurantType> types = typeMapper.findByName(label);
 
-        RestaurantType type = types.get(0); // prend le premier élément
+        RestaurantType type = types.getFirst(); // prend le premier élément
         List<Restaurant> all = restaurantMapper.findAll();
         all.removeIf(r -> !r.getType().getId().equals(type.getId())); // filtre les restaurants
         return all;
@@ -108,7 +103,7 @@ public class RestaurantService {
             restaurantMapper.create(restaurant, em);  // persiste avec l'EM courant
         });
 
-        return restaurant; // l'objet est déjà managed et a son ID généré
+        return restaurant;
     }
 
     /**
@@ -129,7 +124,6 @@ public class RestaurantService {
      * @param newStreet - la nouvelle rue
      * @param newCity - la nouvelle ville
      * @return true si la mise à jour a réussi, false sinon
-     * @throws SQLException en cas d'erreur de base de données
      */
     public boolean updateRestaurantAddress(Restaurant restaurant, String newStreet, City newCity) {
         try {

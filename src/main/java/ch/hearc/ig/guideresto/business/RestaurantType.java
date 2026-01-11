@@ -54,7 +54,7 @@ public class RestaurantType implements IBusinessObject {
     }
 
     public RestaurantType(Integer id, String label, String description) {
-        this.restaurants = new HashSet();
+        this.restaurants = new HashSet<>();
         this.id = id;
         this.label = label;
         this.description = description;

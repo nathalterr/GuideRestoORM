@@ -3,18 +3,16 @@ package ch.hearc.ig.guideresto.services;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
-
-import java.sql.SQLException;
 import java.util.List;
 
 public class RestaurantTypeService {
     private final RestaurantTypeMapper typeMapper = new RestaurantTypeMapper();
     private static RestaurantTypeService instance;
 
-    private RestaurantTypeService() throws SQLException {
+    private RestaurantTypeService() {
     }
 
-    public static RestaurantTypeService getInstance() throws SQLException {
+    public static RestaurantTypeService getInstance() {
         if (instance == null) {
             instance = new RestaurantTypeService();
         }

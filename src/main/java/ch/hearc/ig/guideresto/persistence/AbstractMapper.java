@@ -32,7 +32,7 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
 
     /**
      * Compte le nombre d'objets en base de données.
-     * @return
+     * @return Long — le nombre d'objets
      */
     public Long count() {
         Class<T> entityClass = (Class<T>) getEntityManager().getClass();

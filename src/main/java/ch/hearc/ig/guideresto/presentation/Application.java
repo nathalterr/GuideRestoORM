@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.services.CityService;
 import ch.hearc.ig.guideresto.services.EvaluationService;
 import ch.hearc.ig.guideresto.services.RestaurantService;
@@ -8,9 +9,6 @@ import ch.hearc.ig.guideresto.services.RestaurantTypeService;
 
 import java.sql.SQLException;
 import java.util.*;
-
-import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.closePool;
-
 /**
  * @author cedric.baudet
  * @author alain.matile
@@ -19,6 +17,8 @@ public class Application {
 
     private static Scanner scanner;
     public static void main(String[] args) {
+        JpaUtils.init();//Charge Hibernate et la connexion à la BDD dès le début de l'application
+        Runtime.getRuntime().addShutdownHook(new Thread(JpaUtils::close)); // sert à fermer la connexion JPA à la fermeture de l'application, dans toute les situations
 
         scanner = new Scanner(System.in);
 
@@ -73,7 +73,7 @@ public class Application {
                 break;
             case 0:
                 System.out.println("Au revoir !");
-                closePool();
+                JpaUtils.close();
                 scanner.close();
                 break;
             default:
@@ -128,7 +128,7 @@ public class Application {
     /**
      * Affiche la liste de tous les restaurants, sans filtre
      */
-    private static void showRestaurantsList() throws SQLException{
+    private static void showRestaurantsList() {
 
         System.out.println("Liste des restaurants : ");
         List<Restaurant> restaurants = RestaurantService.getInstance().getAllRestaurants();
@@ -151,7 +151,7 @@ public class Application {
                 System.out.println("Aucun restaurant trouvé pour : " + research);
             }
             else if (restaurants.size() == 1) {
-                showRestaurant(restaurants.get(0));
+                showRestaurant(restaurants.getFirst());
             }
             else{// L'utilisateur choisit un restaurant parmi les résultats.
             Restaurant restaurant = pickRestaurant(restaurants);
@@ -192,10 +192,10 @@ public class Application {
     /**
      * L'utilisateur choisit une ville parmi celles présentes dans le système.
      *
-     * @param cities La liste des villes à présnter à l'utilisateur
+     * @param cities La liste des villes à présenter à l'utilisateur
      * @return La ville sélectionnée, ou null si aucune ville n'a été choisie.
      */
-    private static City pickCity(List<City> cities) throws SQLException {
+    private static City pickCity(List<City> cities) {
         System.out.println("Villes disponibles :");
         for (City c : cities) {
             System.out.println(c.getZipCode() + " " + c.getCityName());
@@ -221,9 +221,9 @@ public class Application {
     }
 
     /**
-     * L'utilisateur choisit un type de restaurant parmis ceux présents dans le système.
+     * L'utilisateur choisit un type de restaurant parmi ceux présents dans le système.
      *
-     * @param types La liste des types de restaurant à présnter à l'utilisateur
+     * @param types La liste des types de restaurant à présenter à l'utilisateur
      * @return Le type sélectionné, ou null si aucun type n'a été choisi.
      */
     private static RestaurantType pickRestaurantType(List<RestaurantType> types) {
@@ -295,7 +295,7 @@ public class Application {
     /**
      * Le programme demande les informations nécessaires à l'utilisateur puis crée un nouveau restaurant dans le système.
      */
-    private static void addNewRestaurant() throws SQLException {
+    private static void addNewRestaurant() {
         String name;
         do {
             System.out.print("Nom du restaurant : ");
@@ -333,7 +333,7 @@ public class Application {
         } while (street.isEmpty());
 
         // Sélection ou création de la ville
-        City city = null;
+        City city;
         do {
             city = pickCity(CityService.getInstance().getAllCities());
             if (city == null) {
@@ -342,7 +342,7 @@ public class Application {
         } while (city == null);
 
         // Sélection du type de restaurant
-        RestaurantType type = null;
+        RestaurantType type;
         do {
             type = pickRestaurantType(RestaurantTypeService.getInstance().getAllTypes());
             if (type == null) {
@@ -430,13 +430,12 @@ public class Application {
      * Retourne un String qui contient le détail complet d'une évaluation si elle est de type "CompleteEvaluation". Retourne un String vide s'il s'agit d'une BasicEvaluation
      *
      * @param eval L'évaluation à afficher
-     * @return Un String qui contient le détail complet d'une CompleteEvaluation, ou un String vide s'il s'agit d'une BasicEvaluation
+     * @return Un String qui contient le détail complet d'une CompleteEvaluation, ou un String vide s'il s'agit d'une BasicEvaluation.
      */
     private static String getCompleteEvaluationDescription(Evaluation eval) {
         StringBuilder result = new StringBuilder();
 
-        if (eval instanceof CompleteEvaluation) {
-            CompleteEvaluation ce = (CompleteEvaluation) eval;
+        if (eval instanceof CompleteEvaluation ce) {
 
             result.append("Evaluation de : ").append(ce.getUsername()).append("\n");
             result.append("Commentaire : ").append(ce.getComment()).append("\n");
@@ -457,8 +456,8 @@ public class Application {
         System.out.println("1. J'aime ce restaurant !");
         System.out.println("2. Je n'aime pas ce restaurant !");
         System.out.println("3. Faire une évaluation complète de ce restaurant !");
-        System.out.println("4. Editer ce restaurant");
-        System.out.println("5. Editer l'adresse du restaurant");
+        System.out.println("4. Éditer ce restaurant");
+        System.out.println("5. Éditer l'adresse du restaurant");
         System.out.println("6. Supprimer ce restaurant");
         System.out.println("0. Revenir au menu principal");
     }
@@ -469,7 +468,7 @@ public class Application {
      * @param choice     Un numéro d'action, entre 0 et 6. Si le numéro ne se trouve pas dans cette plage, l'application ne fait rien et va réafficher le menu complet.
      * @param restaurant L'instance du restaurant sur lequel l'action doit être réalisée
      */
-    private static void proceedRestaurantMenu(int choice, Restaurant restaurant) throws  SQLException {
+    private static void proceedRestaurantMenu(int choice, Restaurant restaurant) {
         switch (choice) {
             case 1:
                 addBasicEvaluation(restaurant, true);
@@ -505,17 +504,17 @@ public class Application {
      * @param restaurant Le restaurant qui est évalué
      * @param like       Est-ce un like ou un dislike ?
      */
-    private static void addBasicEvaluation(Restaurant restaurant, Boolean like) throws SQLException {
+    private static void addBasicEvaluation(Restaurant restaurant, Boolean like)  {
         EvaluationService.getInstance().addBasicEvaluation(restaurant, like);
         System.out.println("Votre vote a été pris en compte !");
     }
 
     /**
-     * Crée une évaluation complète pour le restaurant. L'utilisateur doit saisir toutes les informations (dont un commentaire et quelques notes)
+     * Crée une évaluation complète pour le restaurant. L'utilisateur doit saisir toutes les informations (dont un commentaire et quelques notes).
      *
      * @param restaurant Le restaurant à évaluer
      */
-    private static void evaluateRestaurant(Restaurant restaurant) throws SQLException {
+    private static void evaluateRestaurant(Restaurant restaurant) {
         String username;
         do {
             System.out.print("Nom d'utilisateur : ");
@@ -544,7 +543,7 @@ public class Application {
         System.out.println("✅ Évaluation enregistrée avec succès !");
     }
 
-    private static Map<EvaluationCriteria, Integer> readGrades() throws SQLException {
+    private static Map<EvaluationCriteria, Integer> readGrades() {
         Map<EvaluationCriteria, Integer> notes = new HashMap<>();
 
         List<EvaluationCriteria> criteres = EvaluationService.getInstance().getAllCriteria();
@@ -572,11 +571,11 @@ public class Application {
 
     /**
      * Force l'utilisateur à saisir à nouveau toutes les informations du restaurant (sauf la clé primaire) pour le mettre à jour.
-     * Par soucis de simplicité, l'utilisateur doit tout resaisir.
+     * Par soucis de simplicité, l'utilisateur doit tout saisir à nouveau.
      *
      * @param restaurant Le restaurant à modifier
      */
-    private static void editRestaurant(Restaurant restaurant) throws SQLException {
+    private static void editRestaurant(Restaurant restaurant) {
         System.out.println("Edition d'un restaurant !");
 
         String newName;
@@ -606,7 +605,7 @@ public class Application {
             } else {restaurant.setWebsite(newWebsite);}
         } while (newWebsite.isEmpty());
 
-        RestaurantType newType = null;
+        RestaurantType newType;
         do {
             newType = pickRestaurantType(RestaurantTypeService.getInstance().getAllTypes());
             if (newType == null) {
@@ -625,11 +624,11 @@ public class Application {
 
     /**
      * Permet à l'utilisateur de mettre à jour l'adresse du restaurant.
-     * Par soucis de simplicité, l'utilisateur doit tout resaisir.
+     * Par soucis de simplicité, l'utilisateur doit tout saisir à nouveau.
      *
      * @param restaurant Le restaurant dont l'adresse doit être mise à jour.
      */
-    public static boolean editRestaurantAddress(Restaurant restaurant) throws SQLException {
+    public static boolean editRestaurantAddress(Restaurant restaurant) {
         System.out.println("Edition de l'adresse d'un restaurant !");
 
         String newStreet;
@@ -641,7 +640,7 @@ public class Application {
             }
         } while (newStreet.isEmpty());
 
-        City city = null;
+        City city;
         do {
             city = pickCity(CityService.getInstance().getAllCities());
             if (city == null) {
@@ -660,8 +659,8 @@ public class Application {
      *
      * @param restaurant Le restaurant à supprimer.
      */
-    private static void deleteRestaurant(Restaurant restaurant) throws SQLException {
-        System.out.println("Etes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
+    private static void deleteRestaurant(Restaurant restaurant) {
+        System.out.println("Êtes-vous sûr de vouloir supprimer ce restaurant ? (O/n)");
         String choice = readString();
         if (choice.equalsIgnoreCase("o")) {
             boolean deleted = RestaurantService.getInstance().deleteRestaurant(restaurant);
@@ -669,40 +668,6 @@ public class Application {
         } else {
             System.out.println("Suppression annulée.");
         }
-    }
-
-    /**
-     * Recherche dans le Set la ville comportant le code NPA passé en paramètre.
-     * Retourne null si la ville n'est pas trouvée
-     *
-     * @param cities  Set de villes
-     * @param zipCode NPA de la ville à rechercher
-     * @return L'instance de la ville ou null si pas trouvé
-     */
-    private static City searchCityByZipCode(Set<City> cities, String zipCode) {
-        for (City current : cities) {
-            if (current.getZipCode().equalsIgnoreCase(zipCode)) {
-                return current;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Recherche dans le Set le type comportant le libellé passé en paramètre.
-     * Retourne null si aucun type n'est trouvé.
-     *
-     * @param types Set de types de restaurant
-     * @param label Libellé du type recherché
-     * @return L'instance RestaurantType ou null si pas trouvé
-     */
-    private static RestaurantType searchTypeByLabel(List<RestaurantType> types, String label) {
-        for (RestaurantType current : types) {
-            if (current.getLabel().equalsIgnoreCase(label)) {
-                return current;
-            }
-        }
-        return null;
     }
 
     /**

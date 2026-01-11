@@ -6,3 +6,4 @@ Il reste :
 - retirer l'inutile
 - tests finaux
 - entityManager dans les endroits ou ca a pas de sens
+- addOrGetCity

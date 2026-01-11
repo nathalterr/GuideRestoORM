@@ -4,22 +4,20 @@ import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.CityMapper;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public class CityService {
     private final CityMapper cityMapper = new CityMapper();
     private static CityService instance;
 
-    private CityService() throws SQLException {
+    private CityService() {
     }
 
     /**
      * Singleton pattern
-     * @return instance unique de la classe CityService - créée si elle n'existe pas encore
-     * @throws SQLException - en cas de problème de connexion à la base de données
+     * @return instance unique de la classe CityService — créée si elle n'existe pas encore
      */
-    public static CityService getInstance() throws SQLException {
+    public static CityService getInstance()  {
         if (instance == null) {
             instance = new CityService();
         }
@@ -52,9 +50,8 @@ public class CityService {
      * @param cityName - le nom de la ville
      * @param zipCode - le code postal de la ville
      * @return la ville existante ou nouvellement créée
-     * @throws SQLException - en cas d'erreur de base de données
      */
-    public City addOrGetCity(String cityName, String zipCode) throws SQLException {
+    public City addOrGetCity(String cityName, String zipCode) {
         City city = cityMapper.findByName(cityName);
         if (city == null) {
             city = new City(null, zipCode, cityName);

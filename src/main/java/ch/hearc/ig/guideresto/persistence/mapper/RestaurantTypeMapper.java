@@ -125,19 +125,4 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
                     .getResultList();
         }
     }
-    /**
-     * Méthode de vérification d'existence de types de restaurants en base de données par nom
-     * @param name - nom du type
-     * @return true si un type est trouvé, false sinon
-     */
-    public boolean existsByName(String name) {
-        if (name == null || name.isEmpty()) return false;
-
-        try (EntityManager em = JpaUtils.getEntityManager()) {
-            Long count = em.createNamedQuery("RestaurantType.existsByName", Long.class)
-                    .setParameter("label", name)
-                    .getSingleResult();
-            return count != null && count > 0;
-        }
-    }
 }

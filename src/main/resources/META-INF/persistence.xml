@@ -16,7 +16,6 @@
         <class>ch.hearc.ig.guideresto.business.Localisation</class>
         <class>ch.hearc.ig.guideresto.business.Restaurant</class>
         <class>ch.hearc.ig.guideresto.business.RestaurantType</class>
-
     </persistence-unit>
 
 </persistence>

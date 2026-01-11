@@ -38,4 +38,17 @@ public class JpaUtils {
             throw ex;
         }
     }
+    public static void close() {
+        if (em != null && em.isOpen()) {
+            em.close();
+        }
+        if (emf != null && emf.isOpen()) {
+            emf.close();
+        }
+    }
+    public static void init() {
+        if (emf == null) {
+            emf = Persistence.createEntityManagerFactory("guideRestoJPA");
+        }
+    }
 }

@@ -4,7 +4,6 @@ import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.LockModeType;
 
 import java.util.List;
@@ -53,33 +52,6 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         return true;
     }
 
-    public void deleteByRestaurant(Restaurant restaurant, EntityManager em) {
-        List<CompleteEvaluation> evaluations = findByRestaurant(restaurant);
-        for (CompleteEvaluation eval : evaluations) {
-            delete(eval, em);
-        }
-    }
-
-    public void deleteAllEvaluationOfOnePescopah(Restaurant restaurant){
-    EntityManager em = getEntityManager();
-    EntityTransaction tx = em.getTransaction();
-    try {
-        tx.begin();
-        List<CompleteEvaluation> evaluations = findByRestaurant(restaurant);
-        for (CompleteEvaluation eval : evaluations) {
-            em.remove(em.contains(eval) ? eval : em.merge(eval));
-
-    }
-        tx.commit();
-        } catch (Exception e) {
-            if (tx.isActive()) {
-                tx.rollback();
-            }
-            e.printStackTrace();
-        } finally {
-            em.close();
-        }
-    }
     /**
      * Méthode de suppression en base de donnée
      * @param id - identifiant de l'objet CompleteEvaluation à supprimer
