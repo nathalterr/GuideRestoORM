@@ -44,7 +44,6 @@ public class CityService {
         return cityMapper.findById(city.getId());
     }
 
-
     /**
      * Ajouter une ville si elle n'existe pas déjà, sinon la récupérer
      * @param cityName - le nom de la ville

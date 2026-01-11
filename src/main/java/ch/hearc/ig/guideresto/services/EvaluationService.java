@@ -55,7 +55,6 @@ public class EvaluationService {
         JpaUtils.inTransaction(em -> {
             basicEvaluationMapper.create(eval, em);
         });
-        //restaurant.getEvaluations().add(eval); je l'enlève on verra si ca marche
         return eval;
     }
 
@@ -84,7 +83,6 @@ public class EvaluationService {
             }
         });
 
-        //restaurant.getEvaluations().add(eval);
         return eval;
     }
 
