@@ -295,25 +295,58 @@ public class Application {
      * Le programme demande les informations nécessaires à l'utilisateur puis crée un nouveau restaurant dans le système.
      */
     private static void addNewRestaurant() throws SQLException {
-        System.out.print("Nom du restaurant : ");
-        String name = readString();
-        System.out.print("Description : ");
-        String desc = readString();
-        System.out.print("Site web : ");
-        String website = readString();
-        System.out.print("Rue : ");
-        String street = readString();
+        String name;
+        do {
+            System.out.print("Nom du restaurant : ");
+            name = readString().trim();
+            if (name.isEmpty()) {
+                System.out.println("⚠️ Le nom est obligatoire !");
+            }
+        } while (name.isEmpty());
+
+        String desc;
+        do {
+            System.out.print("Description : ");
+            desc = readString().trim();
+            if (desc.isEmpty()) {
+                System.out.println("⚠️ La description est obligatoire !");
+            }
+        } while (desc.isEmpty());
+
+        String website;
+        do {
+            System.out.print("Site web : ");
+            website = readString().trim();
+            if (website.isEmpty()) {
+                System.out.println("⚠️ Le site web est obligatoire !");
+            }
+        } while (website.isEmpty());
+
+        String street;
+        do {
+            System.out.print("Rue : ");
+            street = readString().trim();
+            if (street.isEmpty()) {
+                System.out.println("⚠️ La rue est obligatoire !");
+            }
+        } while (street.isEmpty());
 
         // Sélection ou création de la ville
         City city = null;
         do {
             city = pickCity(CityService.getInstance().getAllCities());
+            if (city == null) {
+                System.out.println("⚠️ Vous devez sélectionner une ville !");
+            }
         } while (city == null);
 
         // Sélection du type de restaurant
         RestaurantType type = null;
         do {
             type = pickRestaurantType(RestaurantTypeService.getInstance().getAllTypes());
+            if (type == null) {
+                System.out.println("⚠️ Vous devez sélectionner un type de restaurant !");
+            }
         } while (type == null);
 
         // Création via le service
@@ -325,6 +358,7 @@ public class Application {
             System.out.println("❌ Une erreur est survenue lors de l'ajout du restaurant.");
         }
     }
+
 
     /**
      * Affiche toutes les informations du restaurant passé en paramètre, puis affiche le menu des actions disponibles sur ledit restaurant
@@ -447,9 +481,11 @@ public class Application {
                 break;
             case 4:
                 editRestaurant(restaurant);
+
                 break;
             case 5:
-                editRestaurantAddress(restaurant);
+                boolean updated = editRestaurantAddress(restaurant);
+                System.out.println(updated ? "Adresse mise à jour avec succès !" : "Erreur lors de la mise à jour.");
                 break;
             case 6:
                 deleteRestaurant(restaurant);
@@ -479,16 +515,31 @@ public class Application {
      * @param restaurant Le restaurant à évaluer
      */
     private static void evaluateRestaurant(Restaurant restaurant) throws SQLException {
-        System.out.print("Nom d'utilisateur : ");
-        String username = readString().trim();
+        String username;
+        do {
+            System.out.print("Nom d'utilisateur : ");
+            username = readString().trim();
+            if (username.isEmpty()) {
+                System.out.println("⚠️ Le nom d'utilisateur est obligatoire !");
+            }
+        } while (username.isEmpty());
 
-        System.out.print("Commentaire : ");
-        String comment = readString().trim();
+        String comment;
+        do {
+            System.out.print("Commentaire : ");
+            comment = readString().trim();
+            if (comment.isEmpty()) {
+                System.out.println("⚠️ Le commentaire est obligatoire !");
+            }
+        } while (comment.isEmpty());
 
         Map<EvaluationCriteria, Integer> notes = readGrades();
+        if (notes.isEmpty()) {
+            System.out.println("⚠️ Vous devez fournir au moins une note !");
+            notes = readGrades();
+        }
 
         EvaluationService.getInstance().addCompleteEvaluation(restaurant, username, comment, notes);
-
         System.out.println("✅ Évaluation enregistrée avec succès !");
     }
 
@@ -527,34 +578,47 @@ public class Application {
     private static void editRestaurant(Restaurant restaurant) throws SQLException {
         System.out.println("Edition d'un restaurant !");
 
-        System.out.print("Nouveau nom : ");
-        String newName = readString();
+        String newName;
+        do {
+            System.out.print("Nouveau nom : ");
+            newName = readString().trim();
+            if (newName.isEmpty()) {
+                System.out.println("⚠️ Le nom est obligatoire !");
+            } else {restaurant.setName(newName);}
+        } while (newName.isEmpty());
 
-        System.out.print("Nouvelle description : ");
-        String newDescription = readString();
+        String newDescription;
+        do {
+            System.out.print("Nouvelle description : ");
+            newDescription = readString().trim();
+            if (newDescription.isEmpty()) {
+                System.out.println("⚠️ La description est obligatoire !");
+            } else {restaurant.setDescription(newDescription);}
+        } while (newDescription.isEmpty());
 
-        System.out.print("Nouveau site web : ");
-        String newWebsite = readString();
+        String newWebsite;
+        do {
+            System.out.print("Nouveau site web : ");
+            newWebsite = readString().trim();
+            if (newWebsite.isEmpty()) {
+                System.out.println("⚠️ Le site web est obligatoire !");
+            } else {restaurant.setWebsite(newWebsite);}
+        } while (newWebsite.isEmpty());
 
-        RestaurantType newType = pickRestaurantType(RestaurantTypeService.getInstance().getAllTypes());
+        RestaurantType newType = null;
+        do {
+            newType = pickRestaurantType(RestaurantTypeService.getInstance().getAllTypes());
+            if (newType == null) {
+                System.out.println("⚠️ Vous devez sélectionner un type de restaurant !");
+            } else {restaurant.setType(newType);}
+        } while (newType == null);
 
-        System.out.print("Nouvelle rue : ");
-        String newStreet = readString();
+        editRestaurantAddress(restaurant);
 
-        System.out.print("Nom de la ville : ");
-        String cityName = readString();
-
-        City dbCity = CityService.getInstance().findCityByName(cityName);
-        if (dbCity == null) {
-            System.out.print("Code postal pour la nouvelle ville : ");
-            String postalCode = readString();
-            dbCity = CityService.getInstance().addOrGetCity(cityName, postalCode);
-            System.out.println("Nouvelle ville créée : " + dbCity.getCityName());
-        }
-
-        boolean updated = RestaurantService.getInstance().updateRestaurantDetails(restaurant, newName, newDescription, newWebsite, newType, newStreet, dbCity);
+        boolean updated = RestaurantService.getInstance().updateRestaurant(restaurant);
         System.out.println(updated ? "Restaurant mis à jour avec succès !" : "Erreur lors de la mise à jour.");
     }
+
 
 
 
@@ -564,21 +628,29 @@ public class Application {
      *
      * @param restaurant Le restaurant dont l'adresse doit être mise à jour.
      */
-    public static void editRestaurantAddress(Restaurant restaurant) throws SQLException {
+    public static boolean editRestaurantAddress(Restaurant restaurant) throws SQLException {
         System.out.println("Edition de l'adresse d'un restaurant !");
 
-        System.out.print("Nouvelle rue : ");
-        String newStreet = readString();
+        String newStreet;
+        do {
+            System.out.print("Nouvelle rue : ");
+            newStreet = readString().trim();
+            if (newStreet.isEmpty()) {
+                System.out.println("⚠️ La rue est obligatoire !");
+            }
+        } while (newStreet.isEmpty());
 
-        // Sélection ou création de la ville
         City city = null;
         do {
             city = pickCity(CityService.getInstance().getAllCities());
+            if (city == null) {
+                System.out.println("⚠️ Vous devez sélectionner une ville !");
+            }
         } while (city == null);
 
-        boolean updated = RestaurantService.getInstance().updateRestaurantAddress(restaurant, newStreet, city); // appel direct
-        System.out.println(updated ? "Adresse mise à jour avec succès !" : "Erreur lors de la mise à jour.");
+        return RestaurantService.getInstance().updateRestaurantAddress(restaurant, newStreet, city);
     }
+
 
 
 

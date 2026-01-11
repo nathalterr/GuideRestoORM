@@ -52,32 +52,19 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
      * @param newCity - Instance de la nouvelle ville
      * @return true si réussi, false si pas réussi
      */
-    public boolean updateAddress(Restaurant restaurant, String newStreet, City newCity) {
-        if (restaurant == null) return false;
-
-        EntityManager em = JpaUtils.getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-
-            int updated = em.createNamedQuery("Restaurant.updateAddress")
-                    .setParameter("street", newStreet)
-                    .setParameter("city", newCity)
-                    .setParameter("id", restaurant.getId())
-                    .executeUpdate();
-
-            tx.commit();
-            return updated > 0;
-
-        } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
-            e.printStackTrace();
+    public boolean updateAddress(Restaurant restaurant, String newStreet, City newCity, EntityManager em) {
+        if (restaurant == null || newStreet == null || newStreet.isBlank() || newCity == null) {
             return false;
-        } finally {
-            em.close();
         }
+
+        // Mise à jour simple de l'entité
+        Localisation newLocation = new Localisation(newStreet, newCity);
+        restaurant.setAddress(newLocation);
+
+        em.merge(restaurant); // merge avec l'EM fourni par le service
+        return true;
     }
+
 
     /**
      * Méthode de suppression en base de donnée

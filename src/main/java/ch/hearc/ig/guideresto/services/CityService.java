@@ -21,7 +21,6 @@ public class CityService {
         }
         return instance;
     }
-    public void setCityService(CityService cityService) {}
     public List<City> getAllCities() {
         return cityMapper.findAll();
     }

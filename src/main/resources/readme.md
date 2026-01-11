@@ -6,5 +6,3 @@ Il reste :
 - Javadoc
 - gestion des exceptions
 - faire le trigger (ptet genre avec les bails de si machin j'incrémente, sinon non)
-- setCityService
-- inserttion nulle faire attention

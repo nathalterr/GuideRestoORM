@@ -133,17 +133,22 @@ public class RestaurantService {
      * Mettre à jour l'adresse d'un restaurant
      * @param restaurant - le restaurant à mettre à jour
      * @param newStreet - la nouvelle rue
-     * @param city - la nouvelle ville
+     * @param newCity - la nouvelle ville
      * @return true si la mise à jour a réussi, false sinon
      * @throws SQLException en cas d'erreur de base de données
      */
-    public boolean updateRestaurantAddress(Restaurant restaurant, String newStreet, City city) throws SQLException {
-        JpaUtils.inTransaction(em -> {
-            restaurantMapper.updateAddress(restaurant, newStreet, city);
-        });
-        return restaurant.getAddress().getCity().equals(city)
-                && restaurant.getAddress().getStreet().equals(newStreet);
+    public boolean updateRestaurantAddress(Restaurant restaurant, String newStreet, City newCity) {
+        try {
+            JpaUtils.inTransaction(em -> {
+                restaurantMapper.updateAddress(restaurant, newStreet, newCity, em);
+            });
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
+
 
     /**
      * Supprimer un restaurant
