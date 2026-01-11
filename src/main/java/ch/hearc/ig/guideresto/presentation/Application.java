@@ -130,8 +130,15 @@ public class Application {
      */
     private static void showRestaurantsList() {
 
-        System.out.println("Liste des restaurants : ");
         List<Restaurant> restaurants = RestaurantService.getInstance().getAllRestaurants();
+        if (restaurants.isEmpty()){
+            System.out.println("Aucun restaurant n'est enregistré dans le système.");
+            return;
+        } else if (restaurants.size() ==1 ) {
+            System.out.println("Un seul restaurant trouvé :");
+        } else {
+            System.out.println("Liste des restaurants : ");
+        }
         Restaurant restaurant = pickRestaurant(restaurants);
         if (restaurant != null) {
             showRestaurant(restaurant);
@@ -205,10 +212,23 @@ public class Application {
         String choice = readString();
 
         if (choice.equalsIgnoreCase("NEW")) {
-            System.out.print("Nom de la nouvelle ville : ");
-            String name = readString();
-            System.out.print("Code postal : ");
-            String zip = readString();
+            String name;
+            do {
+                System.out.print("Nom de la nouvelle ville : ");
+                name = readString().trim();
+                if (name.isEmpty()) {
+                    System.out.println("⚠️ Le nom est obligatoire !");
+                }
+            } while (name.isEmpty());
+
+            String zip;
+            do {
+                System.out.print("Code postal : ");
+                zip = readString().trim();
+                if (zip.isEmpty()) {
+                    System.out.println("⚠️ Le nom est obligatoire !");
+                }
+            } while (zip.isEmpty());
 
             //Retour de addCity provenant du service Singleton
             return CityService.getInstance().addCity(name, zip);

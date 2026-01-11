@@ -42,7 +42,7 @@ public class RestaurantService {
     public List<Restaurant> findRestaurantsByName(String name) {
         return restaurantMapper.findByName(name);
     }
-    //Celle ci doit retourner qu'un resto car elle doit isoler un seul resto
+
     /**
      * Trouver un restaurant par son nom dans une liste donnée
      * @param restaurants - la liste des restaurants à rechercher

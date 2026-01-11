@@ -40,9 +40,11 @@ public class CityService {
     public City addCity(String cityName, String zipCode) {
         City city = new City(null, zipCode, cityName);
         JpaUtils.inTransaction(em -> {
-            cityMapper.create(city, em);});
-        return cityMapper.findById(city.getId());
+            cityMapper.create(city, em); // persist → city.id est rempli
+        });
+        return city; // retourne la même entité
     }
+
 
     /**
      * Ajouter une ville si elle n'existe pas déjà, sinon la récupérer

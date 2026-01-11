@@ -70,7 +70,7 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
     @Override
     public boolean delete(Restaurant restaurant, EntityManager em) {
         // Récupérer l'entité gérée par l'EM
-        RestaurantType managed = em.find(RestaurantType.class, restaurant.getId(), LockModeType.PESSIMISTIC_WRITE);
+        Restaurant managed = em.find(Restaurant.class, restaurant.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (managed != null) {
             em.remove(managed);
         }

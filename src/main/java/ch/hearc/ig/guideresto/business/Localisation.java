@@ -10,7 +10,7 @@ public class Localisation {
 
     @Column(name = "adresse", nullable= false)
     private String street;
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_vill", nullable= false)
     private City city;
 
