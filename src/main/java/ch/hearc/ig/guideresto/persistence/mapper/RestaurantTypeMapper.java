@@ -4,10 +4,9 @@ import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
 import java.util.*;
-import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
 
@@ -43,7 +42,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
     @Override
     public boolean delete(RestaurantType type, EntityManager em) {
         // Récupérer l'entité gérée par l'EM
-        RestaurantType managed = em.find(RestaurantType.class, type.getId());
+        RestaurantType managed = em.find(RestaurantType.class, type.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (managed != null) {
             em.remove(managed);
         }
@@ -56,7 +55,7 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
      */
     @Override
     public boolean deleteById(Integer id, EntityManager em) {
-        RestaurantType entity = em.find(RestaurantType.class, id);
+        RestaurantType entity = em.find(RestaurantType.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (entity != null) {
             em.remove(entity);
         }

@@ -4,11 +4,9 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
-
+import jakarta.persistence.LockModeType;
 import java.sql.*;
 import java.util.*;
-
-import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation> {
@@ -46,7 +44,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
     @Override
     public boolean delete(CompleteEvaluation evaluation, EntityManager em) {
         // Récupérer l'entité gérée par l'EM
-        CompleteEvaluation managed = em.find(CompleteEvaluation.class, evaluation.getId());
+        CompleteEvaluation managed = em.find(CompleteEvaluation.class, evaluation.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (managed != null) {
             em.remove(managed);
         }
@@ -87,7 +85,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
      */
     @Override
     public boolean deleteById(Integer id, EntityManager em) {
-        CompleteEvaluation entity = em.find(CompleteEvaluation.class, id);
+        CompleteEvaluation entity = em.find(CompleteEvaluation.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (entity != null) {
             em.remove(entity);
         }
@@ -103,7 +101,7 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
         if (id == null) return null;
 
         try (EntityManager em = getEntityManager()) {
-            return em.find(CompleteEvaluation.class, id);
+            return em.find(CompleteEvaluation.class, id, LockModeType.PESSIMISTIC_WRITE);
         }
     }
 

@@ -1,18 +1,12 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
-import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.City;
-import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-
-
+import jakarta.persistence.LockModeType;
 import java.sql.*;
 import java.util.*;
-
-import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class CityMapper extends AbstractMapper<City> {
@@ -52,7 +46,7 @@ public class CityMapper extends AbstractMapper<City> {
     @Override
     public boolean delete(City city, EntityManager em) {
         // Récupérer l'entité gérée par l'EM
-        RestaurantType managed = em.find(RestaurantType.class, city.getId());
+        RestaurantType managed = em.find(RestaurantType.class, city.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (managed != null) {
             em.remove(managed);
         }
@@ -66,7 +60,7 @@ public class CityMapper extends AbstractMapper<City> {
      */
     @Override
     public boolean deleteById(Integer id, EntityManager em) {
-        City entity = em.find(City.class, id);
+        City entity = em.find(City.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (entity != null) {
             em.remove(entity);
         }
@@ -83,7 +77,7 @@ public class CityMapper extends AbstractMapper<City> {
         if (id == null) return null;
 
         try (EntityManager em = getEntityManager()) {
-            return em.find(City.class, id);
+            return em.find(City.class, id, LockModeType.PESSIMISTIC_WRITE);
         }
     }
 

@@ -1,22 +1,12 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
 import ch.hearc.ig.guideresto.business.BasicEvaluation;
-import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
-import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-
-
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import jakarta.persistence.LockModeType;
 import java.util.*;
-
-import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
@@ -54,7 +44,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     @Override
     public boolean delete(BasicEvaluation eval, EntityManager em) {
         // Récupérer l'entité gérée par l'EM
-        RestaurantType managed = em.find(RestaurantType.class, eval.getId());
+        RestaurantType managed = em.find(RestaurantType.class, eval.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (managed != null) {
             em.remove(managed);
         }
@@ -68,7 +58,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
      */
     @Override
     public boolean deleteById(Integer id, EntityManager em) {
-        BasicEvaluation entity = em.find(BasicEvaluation.class, id);
+        BasicEvaluation entity = em.find(BasicEvaluation.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (entity != null) {
             em.remove(entity);
         }
@@ -83,7 +73,7 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
     public BasicEvaluation findById(Integer id) {
         if (id == null) return null;
         try (EntityManager em = getEntityManager()) {
-            return em.find(BasicEvaluation.class, id);
+            return em.find(BasicEvaluation.class, id, LockModeType.PESSIMISTIC_WRITE);
         }
     }
 

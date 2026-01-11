@@ -2,19 +2,10 @@ package ch.hearc.ig.guideresto.services;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
-import ch.hearc.ig.guideresto.persistence.mapper.CompleteEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.LockModeType;
-
 import java.sql.SQLException;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-
-import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class RestaurantService {
     private final RestaurantMapper restaurantMapper = new RestaurantMapper();
@@ -149,7 +140,6 @@ public class RestaurantService {
         }
     }
 
-
     /**
      * Supprimer un restaurant
      * @param restaurant - le restaurant à supprimer
@@ -160,47 +150,12 @@ public class RestaurantService {
 
         try {
             JpaUtils.inTransaction(em -> {
-                // Récupérer le restaurant "managed"
-                Restaurant r = em.find(Restaurant.class, restaurant.getId());
-                if (r == null) return; // rien à supprimer
-                // Supprimer le restaurant
-                em.remove(r);
+                restaurantMapper.delete(restaurant, em);
             });
             return true;
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
-    }
-
-    /**
-     * Mettre à jour les détails d'un restaurant
-     * @param restaurant
-     * @param newName
-     * @param newDescription
-     * @param newWebsite
-     * @param newType
-     * @param newStreet
-     * @param newCity
-     * @return
-     */
-    public boolean updateRestaurantDetails(Restaurant restaurant, String newName, String newDescription,
-                                           String newWebsite, RestaurantType newType,
-                                           String newStreet, City newCity) {
-        if (restaurant == null || newName == null || newStreet == null || newCity == null) return false;
-
-        restaurant.setName(newName);
-        restaurant.setDescription(newDescription);
-        restaurant.setWebsite(newWebsite);
-        if (newType != null) {
-            restaurant.setType(newType);
-        }
-        restaurant.getAddress().setStreet(newStreet);
-        restaurant.getAddress().setCity(newCity);
-        JpaUtils.inTransaction(em -> {
-            restaurantMapper.update(restaurant, em);
-        });
-
-        return true;
     }
 }

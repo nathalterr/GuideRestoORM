@@ -1,10 +1,6 @@
 package ch.hearc.ig.guideresto.business;
 
 import jakarta.persistence.*;
-import org.apache.commons.collections4.CollectionUtils;
-
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
 /**

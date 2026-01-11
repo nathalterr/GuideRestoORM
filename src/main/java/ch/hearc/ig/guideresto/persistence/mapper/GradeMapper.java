@@ -2,15 +2,9 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 
 import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.NoResultException;
-
+import jakarta.persistence.*;
 import java.sql.*;
 import java.util.*;
-
-import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class GradeMapper extends AbstractMapper<Grade> {
@@ -47,7 +41,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
     @Override
     public boolean delete(Grade grade, EntityManager em) {
         // Récupérer l'entité gérée par l'EM
-        RestaurantType managed = em.find(RestaurantType.class, grade.getId());
+        RestaurantType managed = em.find(RestaurantType.class, grade.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (managed != null) {
             em.remove(managed);
         }
@@ -61,7 +55,7 @@ public class GradeMapper extends AbstractMapper<Grade> {
      */
     @Override
     public boolean deleteById(Integer id, EntityManager em) {
-        Grade entity = em.find(Grade.class, id);
+        Grade entity = em.find(Grade.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (entity != null) {
             em.remove(entity);
         }

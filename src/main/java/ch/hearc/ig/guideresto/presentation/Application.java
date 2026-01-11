@@ -1,14 +1,11 @@
 package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
-import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
 import ch.hearc.ig.guideresto.services.*;
 import java.sql.SQLException;
 import java.util.*;
-
 import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.closePool;
-import static ch.hearc.ig.guideresto.services.CityService.getInstance;
 
 /**
  * @author cedric.baudet

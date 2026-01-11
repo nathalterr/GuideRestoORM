@@ -1,18 +1,13 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
-import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.EvaluationCriteria;
-import ch.hearc.ig.guideresto.business.Restaurant;
 import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.NoResultException;
-
 import java.sql.*;
 import java.util.*;
-
-import static ch.hearc.ig.guideresto.persistence.ConnectionUtils.getConnection;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria> {
@@ -47,7 +42,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
     @Override
     public boolean delete(EvaluationCriteria critere, EntityManager em) {
         // Récupérer l'entité gérée par l'EM
-        RestaurantType managed = em.find(RestaurantType.class, critere.getId());
+        RestaurantType managed = em.find(RestaurantType.class, critere.getId(), LockModeType.PESSIMISTIC_WRITE);
         if (managed != null) {
             em.remove(managed);
         }
@@ -60,7 +55,7 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
      */
     @Override
     public boolean deleteById(Integer id, EntityManager em) {
-        EvaluationCriteria entity = em.find(EvaluationCriteria.class, id);
+        EvaluationCriteria entity = em.find(EvaluationCriteria.class, id, LockModeType.PESSIMISTIC_WRITE);
         if (entity != null) {
             em.remove(entity);
         }

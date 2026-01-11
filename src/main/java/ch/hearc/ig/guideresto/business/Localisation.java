@@ -1,7 +1,6 @@
 package ch.hearc.ig.guideresto.business;
 
 import jakarta.persistence.*;
-import jakarta.persistence.Entity;
 
 /**
  * @author cedric.baudet

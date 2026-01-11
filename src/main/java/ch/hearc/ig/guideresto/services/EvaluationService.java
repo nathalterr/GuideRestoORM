@@ -4,9 +4,6 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.EntityTransaction;
-import jakarta.persistence.LockModeType;
-
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
