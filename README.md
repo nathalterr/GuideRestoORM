@@ -1,28 +1,40 @@
-# GuideResto ORM
+# GuideResto
 
-Un canevas de projet simple permettant aux étudiants de la HEG-Arc de pratiquer la persistance à l'aide du framework Hibernate et de démontrer leur aptitude à transformer un projet JDBC en projet guidé par un ORM.
+GuideResto est une application Java console pour gérer des restaurants, leurs types, leurs villes et leurs évaluations.
 
-## But
+---
 
-Le but de ce projet est de permettre l'exécution en parallèle du cours de modules de pratique. Vous apprendrez ainsi la persistance des données pas à pas.
+# ‍💻 Auteur
+- Nathan Altermatt
+- Stéphane Thiébaud
 
-## Evaluation
+---
 
-Les conditions d'évaluation de ce cours sont indiquées dans les supports théoriques.
+## ⚙️ Configuration
 
-## Démarrer
+- SDK : OpenJDK 21
+- Maven
 
-Pour commencer, veuillez:
+---
+# 📝 Mise en place
+Pour mettre en place le projet, vous avez deux options :
+1. Utilisation du fichier .ZIP
+    - Extraire le contenu du fichier ZIP donné
+    - Lancer IntelliJ et ouvrir le projet en sélectionnant le dossier extrait
 
-1. Copier le fichier `src/main/java/resources/hibernate.properties.template` et l'appeler `hibernate.properties`
-2. Y renseigner vos identifiants de base de données
-3. (optionnel) Copier vos Data Mappers et vos services dans le projet
 
-La suite des instructions est disponible dans le cours sur CyberLearn.
+2. Clonage du projet
+- Lancer IntelliJ IDEA puis New Projet from Version Control
+- Utiliser le lien suivant pour cloner le dépôt GitHub :
+   ```bash
+   git clone https://github.com/nathalterr/GuideRestoORM.git
+    ```
+- Copier le contenu du fichier "hibernate.properties.template" dans un fichier "hibernate.properties" au même endroit
+- Modifier les lignes suivantes avec vos informations de connexion à la base de données Oracle.
+   ```properties
+   hibernate.connection.url=jdbc:oracle:thin:@db.ig.he-arc.ch:1521:ens
+   hibernate.connection.username=your_username
+   hibernate.connection.password=your_password
+   ```
+- Lancer dans votre schéma les scripts SQL situés dans le projet pour créer les tables et insérer des données de test.
 
-**Note:** ce projet est pour l'heure configuré avec la base de données mémoire `FakeItems` comme pour le projet JDBC.
-Vous pouvez récupérer vos Data Mappers ainsi que vos services et les injecter dans le projet pour démarrer plus rapidement.
-
-## Credits
-
-Le modèle de domaine a été réalisé par Cédric Baudet. Consultez [ce dépôt](https://github.com/cedricbaudet/GuideResto) pour accéder aux sources originales.
