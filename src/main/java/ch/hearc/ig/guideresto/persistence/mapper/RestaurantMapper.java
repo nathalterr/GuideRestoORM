@@ -4,8 +4,10 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import ch.hearc.ig.guideresto.services.EvaluationService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.LockModeType;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -28,42 +30,20 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
      * @return l'objet Restaurant créé, ou null en cas d'erreur
      */
     @Override
-    public Restaurant create(Restaurant restaurant) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-            em.persist(restaurant);
-            tx.commit();
-            return restaurant;
-        } catch (Exception e) {
-            if (tx.isActive()) {
-                tx.rollback();
-            }
-            return null;
-        }
+    public Restaurant create(Restaurant restaurant, EntityManager em) {
+        em.persist(restaurant);  // il devient "managed"
+        return restaurant;       // retourne l'entité persistée
     }
+
     /**
      * Méthode de mise à jour en base de donnée
      * @param restaurant - l'objet Restaurant à mettre à jour
      * @return true si la mise à jour a réussi, false en cas d'erreur
      */
     @Override
-    public boolean update(Restaurant restaurant) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-            tx.commit();
-            return true;
-        } catch (Exception e) {
-            if (tx.isActive()) {
-                tx.rollback();
-            }
-            return false;
-        }
+    public boolean update(Restaurant restaurant, EntityManager em) {
+        em.merge(restaurant);  // merge l'entité avec l'EM courant
+        return true;
     }
     /**
      * Méthode de mise à jour de l'adresse et de la ville d'un restaurant
@@ -105,11 +85,13 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean delete(Restaurant restaurant) {
-        if (restaurant == null || restaurant.getId() == null) {
-            return false;
+    public boolean delete(Restaurant restaurant, EntityManager em) {
+        // Récupérer l'entité gérée par l'EM
+        RestaurantType managed = em.find(RestaurantType.class, restaurant.getId());
+        if (managed != null) {
+            em.remove(managed);
         }
-        return deleteById(restaurant.getId());
+        return true;
     }
 
     /**
@@ -117,29 +99,12 @@ public class RestaurantMapper extends AbstractMapper<Restaurant> {
      * @param id - identifiant du restaurant à supprimer
      * @return true si la suppression a réussi, false sinon
      */
-    public boolean deleteById(Integer id) {
-        EntityManager em = getEntityManager();
-        EntityTransaction tx = em.getTransaction();
-
-        try {
-            tx.begin();
-
-            Restaurant rest = em.find(Restaurant.class, id);
-            if (rest == null) {
-                tx.commit();
-                return false;
-            }
-
-            em.remove(rest); // Hibernate supprime : CompleteEvaluation -> Grades + BasicEvaluation
-
-            tx.commit();
-
-            return true;
-
-        } catch (Exception e) {
-            if (tx.isActive()) tx.rollback();
-            return false;
+    public boolean deleteById(Integer id, EntityManager em) {
+        Restaurant entity = em.find(Restaurant.class, id);
+        if (entity != null) {
+            em.remove(entity);
         }
+        return true;
     }
 
     /**

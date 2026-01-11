@@ -2,6 +2,9 @@ package ch.hearc.ig.guideresto.persistence;
 
 import ch.hearc.ig.guideresto.business.IBusinessObject;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityManager;
+
+import java.sql.SQLException;
 import java.util.List;
 import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
@@ -12,10 +15,10 @@ public abstract class AbstractMapper<T extends IBusinessObject> {
 
     public abstract T findById(Integer id);
     public abstract List<T> findAll();
-    public abstract T create(T object);
-    public abstract boolean update(T object);
-    public abstract boolean delete(T object);
-    public abstract boolean deleteById(Integer id);
+    public abstract T create(T object, EntityManager em);
+    public abstract boolean update(T object, EntityManager em);
+    public abstract boolean delete(T object, EntityManager em) throws SQLException;
+    public abstract boolean deleteById(Integer id, EntityManager em) throws SQLException;
 
     /**
      * Vérifie si un objet avec l'ID donné existe.

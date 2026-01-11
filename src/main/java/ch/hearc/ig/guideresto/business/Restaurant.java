@@ -58,13 +58,10 @@ public class Restaurant implements IBusinessObject {
     private String description;
     @Column(name="SITE_WEB", nullable=false)
     private String website;
-    @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "restaurant", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<CompleteEvaluation> completeEvaluations;
     @OneToMany(mappedBy = "restaurant", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<BasicEvaluation> basicEvaluations;
-    @Transient
-    private Set<Evaluation> evaluations; // Il va falloir la remplir par la somme des deux autres listes, mais c'est pas grave
-    //EDIT : on va faire autrement, balek de l'héritage on fait juste les deux listes et quand on a besoin des deux on appelle les deux et point
     @Embedded
     private Localisation address; // ATTENTION, resto stocke une rue en String (adresse dans bd) et une fk pour la ville : fk_vill
     @ManyToOne(fetch = FetchType.LAZY)
@@ -80,7 +77,6 @@ public class Restaurant implements IBusinessObject {
         this.name = name;
         this.description = description;
         this.website = website;
-        this.evaluations = new HashSet();
         this.address = new Localisation(street, city);
         this.type = type;
     }
@@ -90,7 +86,6 @@ public class Restaurant implements IBusinessObject {
         this.name = name;
         this.description = description;
         this.website = website;
-        this.evaluations = new HashSet();
         this.address = address;
         this.type = type;
     }
@@ -130,14 +125,6 @@ public class Restaurant implements IBusinessObject {
         this.website = website;
     }
 
-    public Set<Evaluation> getEvaluations() {
-        return evaluations;
-    }
-
-    public void setEvaluations(Set<Evaluation> evaluations) {
-        this.evaluations = evaluations;
-    }
-
     public Localisation getAddress() {
         return address;
     }
@@ -154,14 +141,10 @@ public class Restaurant implements IBusinessObject {
         this.type = type;
     }
 
-    public boolean hasEvaluations() {
-        return CollectionUtils.isNotEmpty(evaluations);
-    }
-
-    public Collection<CompleteEvaluation> getCompleteEvaluations() {
+    public Set<CompleteEvaluation> getCompleteEvaluations() {
         return this.completeEvaluations;
     }
-    public Collection<BasicEvaluation> getBasicEvaluations() {
+    public Set<BasicEvaluation> getBasicEvaluations() {
         return this.basicEvaluations;
     }
 

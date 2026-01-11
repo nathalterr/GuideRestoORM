@@ -29,7 +29,7 @@ public class RestaurantTypeService {
     public RestaurantType addType(String label, String description) {
         RestaurantType type = new RestaurantType(null, label, description);
         JpaUtils.inTransaction(em -> {
-            typeMapper.create(type);
+            typeMapper.create(type, em);
         });
         return type;
     }

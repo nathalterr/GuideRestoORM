@@ -36,7 +36,7 @@ public class CompleteEvaluation extends Evaluation {
     private String comment;
     @Column(name="NOM_UTILISATEUR")
     private String username;
-    @OneToMany(mappedBy = "evaluation", fetch = FetchType.EAGER) // évite des problèmes de LazyInitialisationException
+    @OneToMany(mappedBy = "evaluation", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true) // évite des problèmes de LazyInitialisationException
     private Set<Grade> grades = new HashSet<>();
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "fk_rest", nullable = false)

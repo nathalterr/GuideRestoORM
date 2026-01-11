@@ -20,26 +20,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
      * @return l'objet RestaurantType créé, ou null en cas d'erreur
      */
     @Override
-    public RestaurantType create(RestaurantType type) {
-        try (EntityManager em = getEntityManager()) {
-
-            // Vérifie si un type avec le même label existe déjà
-            List<RestaurantType> existingTypes = findByName(type.getLabel());
-            if (!existingTypes.isEmpty()) {
-                return existingTypes.get(0);
-            }
-
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.persist(type);
-                tx.commit();
-                return type;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return null;
-            }
-        }
+    public RestaurantType create(RestaurantType type, EntityManager em) {
+        em.persist(type);  // il devient "managed"
+        return type;       // retourne l'entité persistée
     }
 
     /**
@@ -48,19 +31,9 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
      * @return true si la mise à jour a réussi, false en cas d'erreur
      */
     @Override
-    public boolean update(RestaurantType type) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.merge(type);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-            }
-        }
+    public boolean update(RestaurantType type, EntityManager em) {
+        em.merge(type);  // merge l'entité avec l'EM courant
+        return true;
     }
     /**
      * Méthode de suppression en base de donnée
@@ -68,35 +41,26 @@ public class RestaurantTypeMapper extends AbstractMapper<RestaurantType> {
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean delete(RestaurantType type) {
-        if (type == null || type.getId() == null) return false;
-        return deleteById(type.getId());
+    public boolean delete(RestaurantType type, EntityManager em) {
+        // Récupérer l'entité gérée par l'EM
+        RestaurantType managed = em.find(RestaurantType.class, type.getId());
+        if (managed != null) {
+            em.remove(managed);
+        }
+        return true;
     }
-
     /**
      * Méthode de suppression en base de donnée
      * @param id - identifiant du RestaurantType à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean deleteById(Integer id) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                RestaurantType entity = em.find(RestaurantType.class, id);
-                if (entity == null) {
-                    tx.commit();
-                    return false;
-                }
-                em.remove(entity);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-            }
+    public boolean deleteById(Integer id, EntityManager em) {
+        RestaurantType entity = em.find(RestaurantType.class, id);
+        if (entity != null) {
+            em.remove(entity);
         }
+        return true;
     }
 
     /**

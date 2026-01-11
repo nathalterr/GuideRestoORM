@@ -1,16 +1,20 @@
 package ch.hearc.ig.guideresto.services;
 
-import ch.hearc.ig.guideresto.business.City;
-import ch.hearc.ig.guideresto.business.Restaurant;
-import ch.hearc.ig.guideresto.business.RestaurantType;
+import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
+import ch.hearc.ig.guideresto.persistence.mapper.CompleteEvaluationMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantMapper;
 import ch.hearc.ig.guideresto.persistence.mapper.RestaurantTypeMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.LockModeType;
 
 import java.sql.SQLException;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class RestaurantService {
     private final RestaurantMapper restaurantMapper = new RestaurantMapper();
@@ -103,12 +107,14 @@ public class RestaurantService {
      */
     public Restaurant addRestaurant(String name, String description, String website,
                                     String street, City city, RestaurantType restaurantType) {
+
         Restaurant restaurant = new Restaurant(null, name, description, website, street, city, restaurantType);
 
         JpaUtils.inTransaction(em -> {
-            restaurantMapper.create(restaurant);
+            restaurantMapper.create(restaurant, em);  // persiste avec l'EM courant
         });
-        return restaurantMapper.findById(restaurant.getId());
+
+        return restaurant; // l'objet est déjà managed et a son ID généré
     }
 
     /**
@@ -118,7 +124,7 @@ public class RestaurantService {
      */
     public boolean updateRestaurant(Restaurant restaurant) {
         JpaUtils.inTransaction(em -> {
-            restaurantMapper.update(restaurant);
+            restaurantMapper.update(restaurant, em);
         });
         return true;
     }
@@ -139,17 +145,27 @@ public class RestaurantService {
                 && restaurant.getAddress().getStreet().equals(newStreet);
     }
 
-
     /**
      * Supprimer un restaurant
      * @param restaurant - le restaurant à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     public boolean deleteRestaurant(Restaurant restaurant) {
-        JpaUtils.inTransaction(em -> {
-            restaurantMapper.delete(restaurant);
-        });
-        return restaurantMapper.findById(restaurant.getId()) == null;
+        if (restaurant == null || restaurant.getId() == null) return false;
+
+        try {
+            JpaUtils.inTransaction(em -> {
+                // Récupérer le restaurant "managed"
+                Restaurant r = em.find(Restaurant.class, restaurant.getId());
+                if (r == null) return; // rien à supprimer
+                // Supprimer le restaurant
+                em.remove(r);
+            });
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     /**
@@ -177,7 +193,7 @@ public class RestaurantService {
         restaurant.getAddress().setStreet(newStreet);
         restaurant.getAddress().setCity(newCity);
         JpaUtils.inTransaction(em -> {
-            restaurantMapper.update(restaurant);
+            restaurantMapper.update(restaurant, em);
         });
 
         return true;

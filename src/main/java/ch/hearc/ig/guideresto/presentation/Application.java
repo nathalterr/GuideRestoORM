@@ -1,6 +1,7 @@
 package ch.hearc.ig.guideresto.presentation;
 
 import ch.hearc.ig.guideresto.business.*;
+import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
 import ch.hearc.ig.guideresto.services.*;
 import java.sql.SQLException;
@@ -401,6 +402,7 @@ public class Application {
 
         if (eval instanceof CompleteEvaluation) {
             CompleteEvaluation ce = (CompleteEvaluation) eval;
+
             result.append("Evaluation de : ").append(ce.getUsername()).append("\n");
             result.append("Commentaire : ").append(ce.getComment()).append("\n");
             for (Grade currentGrade : ce.getGrades()) {

@@ -4,13 +4,15 @@ import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import ch.hearc.ig.guideresto.persistence.mapper.*;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.LockModeType;
 
 import java.net.Inet4Address;
 import java.net.UnknownHostException;
 import java.sql.SQLException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static ch.hearc.ig.guideresto.persistence.jpa.JpaUtils.getEntityManager;
 
 public class EvaluationService {
     private final BasicEvaluationMapper basicEvaluationMapper = new BasicEvaluationMapper();
@@ -50,9 +52,9 @@ public class EvaluationService {
         }
         BasicEvaluation eval = new BasicEvaluation(null, new Date(), restaurant, likeRestaurant, ip);
         JpaUtils.inTransaction(em -> {
-            basicEvaluationMapper.create(eval);
+            basicEvaluationMapper.create(eval, em);
         });
-        restaurant.getEvaluations().add(eval);
+        //restaurant.getEvaluations().add(eval); je l'enlève on verra si ca marche
         return eval;
     }
 
@@ -75,13 +77,13 @@ public class EvaluationService {
             eval.getGrades().add(grade);
         }
         JpaUtils.inTransaction(em -> {
-            completeEvaluationMapper.create(eval);
+            completeEvaluationMapper.create(eval, em);
             for (Grade g : eval.getGrades()) {
-                gradeMapper.create(g);
+                gradeMapper.create(g, em);
             }
         });
 
-        restaurant.getEvaluations().add(eval);
+        //restaurant.getEvaluations().add(eval);
         return eval;
     }
 
@@ -93,7 +95,7 @@ public class EvaluationService {
     public List<BasicEvaluation> getBasicEvaluations(Restaurant restaurant) {
         if (restaurant == null) return List.of();
 
-        EntityManager em = JpaUtils.getEntityManager();
+        EntityManager em = getEntityManager();
         try {
             return em.createNamedQuery("BasicEvaluation.findByRestaurant", BasicEvaluation.class)
                     .setParameter("restaurant", restaurant)
@@ -133,4 +135,5 @@ public class EvaluationService {
     public List<EvaluationCriteria> getAllCriteria() throws SQLException {
         return evalCriteriaMapper.findAll();
     }
+
 }

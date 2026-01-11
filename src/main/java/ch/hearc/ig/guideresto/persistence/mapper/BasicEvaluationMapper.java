@@ -3,6 +3,7 @@ package ch.hearc.ig.guideresto.persistence.mapper;
 import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import ch.hearc.ig.guideresto.persistence.jpa.JpaUtils;
 import jakarta.persistence.EntityManager;
@@ -29,20 +30,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
      * @return l'objet BasicEvaluation créé, ou null en cas d'erreur
      */
     @Override
-    public BasicEvaluation create(BasicEvaluation eval) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.persist(eval);
-                tx.commit();
-                return eval;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return null;
-            }
-        }
+    public BasicEvaluation create(BasicEvaluation eval, EntityManager em) {
+        em.persist(eval);  // il devient "managed"
+        return eval;       // retourne l'entité persistée
     }
 
     /**
@@ -52,20 +42,9 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
      */
 
     @Override
-    public boolean update(BasicEvaluation eval) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.merge(eval);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return false;
-            }
-        }
+    public boolean update(BasicEvaluation eval, EntityManager em) {
+        em.merge(eval);  // merge l'entité avec l'EM courant
+        return true;
     }
     /**
      * Méthode de suppression en base de donnée
@@ -73,9 +52,13 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean delete(BasicEvaluation eval) {
-        if (eval == null || eval.getId() == null) return false;
-        return deleteById(eval.getId());
+    public boolean delete(BasicEvaluation eval, EntityManager em) {
+        // Récupérer l'entité gérée par l'EM
+        RestaurantType managed = em.find(RestaurantType.class, eval.getId());
+        if (managed != null) {
+            em.remove(managed);
+        }
+        return true;
     }
 
     /**
@@ -84,27 +67,14 @@ public class BasicEvaluationMapper extends AbstractMapper<BasicEvaluation> {
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean deleteById(Integer id) {
-        if (id == null) return false;
-
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                BasicEvaluation entity = em.find(BasicEvaluation.class, id);
-                if (entity == null) {
-                    tx.commit();
-                    return false;
-                }
-                em.remove(entity);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-            }
+    public boolean deleteById(Integer id, EntityManager em) {
+        BasicEvaluation entity = em.find(BasicEvaluation.class, id);
+        if (entity != null) {
+            em.remove(entity);
         }
+        return true;
     }
+
     /**
      * Méthode de recherche d'une évaluation basique en base de données par son identifiant.
      * @param id - identifiant du BasicEvaluation recherché

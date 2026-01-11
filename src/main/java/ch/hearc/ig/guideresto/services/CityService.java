@@ -49,7 +49,7 @@ public class CityService {
     public City addCity(String cityName, String zipCode) {
         City city = new City(null, zipCode, cityName);
         JpaUtils.inTransaction(em -> {
-            cityMapper.create(city);});
+            cityMapper.create(city, em);});
         return cityMapper.findById(city.getId());
     }
 
@@ -67,7 +67,7 @@ public class CityService {
             city = new City(null, zipCode, cityName);
             City finalCity = city;
             JpaUtils.inTransaction(em -> {
-            cityMapper.create(finalCity);
+            cityMapper.create(finalCity, em);
             });
         }
         return cityMapper.findByName(cityName);

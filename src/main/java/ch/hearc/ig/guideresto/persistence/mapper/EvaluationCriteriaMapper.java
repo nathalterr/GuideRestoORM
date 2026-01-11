@@ -1,7 +1,9 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
+import ch.hearc.ig.guideresto.business.CompleteEvaluation;
 import ch.hearc.ig.guideresto.business.EvaluationCriteria;
 import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -22,20 +24,9 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
      * @return l'objet EvaluationCriteria créé, ou null en cas d'erreur
      */
     @Override
-    public EvaluationCriteria create(EvaluationCriteria critere) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.persist(critere);
-                tx.commit();
-                return critere;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return null;
-            }
-        }
+    public EvaluationCriteria create(EvaluationCriteria critere, EntityManager em) {
+        em.persist(critere);  // il devient "managed"
+        return critere;       // retourne l'entité persistée
     }
 
     /**
@@ -44,20 +35,9 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
      * @return true si la mise à jour a réussi, false en cas d'erreur
      */
     @Override
-    public boolean update(EvaluationCriteria critere) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.merge(critere);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return false;
-            }
-        }
+    public boolean update(EvaluationCriteria critere, EntityManager em) {
+        em.merge(critere);  // merge l'entité avec l'EM courant
+        return true;
     }
     /**
      * Méthode de suppression en base de donnée
@@ -65,9 +45,13 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean delete(EvaluationCriteria critere) {
-        if (critere == null || critere.getId() == null) return false;
-        return deleteById(critere.getId());
+    public boolean delete(EvaluationCriteria critere, EntityManager em) {
+        // Récupérer l'entité gérée par l'EM
+        RestaurantType managed = em.find(RestaurantType.class, critere.getId());
+        if (managed != null) {
+            em.remove(managed);
+        }
+        return true;
     }
     /**
      * Méthode de suppression en base de donnée
@@ -75,28 +59,14 @@ public class EvaluationCriteriaMapper extends AbstractMapper<EvaluationCriteria>
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean deleteById(Integer id) {
-        if (id == null) return false;
-
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                EvaluationCriteria critere = em.find(EvaluationCriteria.class, id);
-                if (critere == null) {
-                    tx.commit();
-                    return false;
-                }
-                em.remove(critere);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return false;
-            }
+    public boolean deleteById(Integer id, EntityManager em) {
+        EvaluationCriteria entity = em.find(EvaluationCriteria.class, id);
+        if (entity != null) {
+            em.remove(entity);
         }
+        return true;
     }
+
     /**
      * Méthode de recherche d'un critère d'évaluation en base de données par son identifiant.
      * @param id - identifiant du EvaluationCriteria recherché

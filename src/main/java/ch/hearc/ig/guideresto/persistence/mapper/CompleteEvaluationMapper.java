@@ -1,8 +1,6 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
-import ch.hearc.ig.guideresto.business.CompleteEvaluation;
-import ch.hearc.ig.guideresto.business.Grade;
-import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -24,20 +22,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
      * @return l'objet CompleteEvaluation créé, ou null en cas d'erreur
      */
     @Override
-    public CompleteEvaluation create(CompleteEvaluation completeEvaluation) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.persist(completeEvaluation);
-                tx.commit();
-                return completeEvaluation;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return null;
-            }
-        }
+    public CompleteEvaluation create(CompleteEvaluation completeEvaluation, EntityManager em) {
+        em.persist(completeEvaluation);  // il devient "managed"
+        return completeEvaluation;       // retourne l'entité persistée
     }
 
     /**
@@ -46,19 +33,9 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
      * @return true si la mise à jour a réussi, false en cas d'erreur
      */
     @Override
-    public boolean update(CompleteEvaluation evaluation) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.merge(evaluation);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-            }
-        }
+    public boolean update(CompleteEvaluation evaluation, EntityManager em) {
+        em.merge(evaluation);  // merge l'entité avec l'EM courant
+        return true;
     }
 
     /**
@@ -67,37 +44,54 @@ public class CompleteEvaluationMapper extends AbstractMapper<CompleteEvaluation>
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean delete(CompleteEvaluation evaluation) {
-        if (evaluation == null || evaluation.getId() == null) return false;
-        return deleteById(evaluation.getId());
+    public boolean delete(CompleteEvaluation evaluation, EntityManager em) {
+        // Récupérer l'entité gérée par l'EM
+        CompleteEvaluation managed = em.find(CompleteEvaluation.class, evaluation.getId());
+        if (managed != null) {
+            em.remove(managed);
+        }
+        return true;
     }
 
+    public void deleteByRestaurant(Restaurant restaurant, EntityManager em) {
+        List<CompleteEvaluation> evaluations = findByRestaurant(restaurant);
+        for (CompleteEvaluation eval : evaluations) {
+            delete(eval, em);
+        }
+    }
+
+    public void deleteAllEvaluationOfOnePescopah(Restaurant restaurant){
+    EntityManager em = getEntityManager();
+    EntityTransaction tx = em.getTransaction();
+    try {
+        tx.begin();
+        List<CompleteEvaluation> evaluations = findByRestaurant(restaurant);
+        for (CompleteEvaluation eval : evaluations) {
+            em.remove(em.contains(eval) ? eval : em.merge(eval));
+
+    }
+        tx.commit();
+        } catch (Exception e) {
+            if (tx.isActive()) {
+                tx.rollback();
+            }
+            e.printStackTrace();
+        } finally {
+            em.close();
+        }
+    }
     /**
      * Méthode de suppression en base de donnée
      * @param id - identifiant de l'objet CompleteEvaluation à supprimer
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean deleteById(Integer id) {
-        if (id == null) return false;
-
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                CompleteEvaluation evaluation = em.find(CompleteEvaluation.class, id);
-                if (evaluation == null) {
-                    tx.commit();
-                    return false;
-                }
-                em.remove(evaluation);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-            }
+    public boolean deleteById(Integer id, EntityManager em) {
+        CompleteEvaluation entity = em.find(CompleteEvaluation.class, id);
+        if (entity != null) {
+            em.remove(entity);
         }
+        return true;
     }
 
     /**

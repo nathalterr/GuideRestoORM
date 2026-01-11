@@ -1,9 +1,6 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
-import ch.hearc.ig.guideresto.business.CompleteEvaluation;
-import ch.hearc.ig.guideresto.business.EvaluationCriteria;
-import ch.hearc.ig.guideresto.business.Grade;
-import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.*;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,19 +23,9 @@ public class GradeMapper extends AbstractMapper<Grade> {
      * @param grade à ajouter en base
      * @return l'objet Grade créé, ou null en cas d'erreur
      */
-    public Grade create(Grade grade) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.persist(grade);
-                tx.commit();
-                return grade;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return null;
-            }
-        }
+    public Grade create(Grade grade, EntityManager em) {
+        em.persist(grade);  // il devient "managed"
+        return grade;       // retourne l'entité persistée
     }
 
     /**
@@ -46,19 +33,9 @@ public class GradeMapper extends AbstractMapper<Grade> {
      * @param grade - l'objet Grade à mettre à jour
      * @return true si la mise à jour a réussi, false en cas d'erreur
      */
-    public boolean update(Grade grade) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.merge(grade);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-            }
-        }
+    public boolean update(Grade grade, EntityManager em) {
+        em.merge(grade);  // merge l'entité avec l'EM courant
+        return true;
     }
 
     /**
@@ -68,8 +45,13 @@ public class GradeMapper extends AbstractMapper<Grade> {
      */
 
     @Override
-    public boolean delete(Grade grade) {
-        return deleteById(grade.getId());
+    public boolean delete(Grade grade, EntityManager em) {
+        // Récupérer l'entité gérée par l'EM
+        RestaurantType managed = em.find(RestaurantType.class, grade.getId());
+        if (managed != null) {
+            em.remove(managed);
+        }
+        return true;
     }
 
     /**
@@ -78,27 +60,12 @@ public class GradeMapper extends AbstractMapper<Grade> {
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean deleteById(Integer id) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-
-                Grade ref = em.getReference(Grade.class, id);
-                em.remove(ref);
-
-                tx.commit();
-                return true;
-
-            } catch (EntityNotFoundException e) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-
-            } catch (Exception ex) {
-                if (tx.isActive()) tx.rollback();
-                return false;
-            }
+    public boolean deleteById(Integer id, EntityManager em) {
+        Grade entity = em.find(Grade.class, id);
+        if (entity != null) {
+            em.remove(entity);
         }
+        return true;
     }
 
     /**

@@ -1,7 +1,9 @@
 package ch.hearc.ig.guideresto.persistence.mapper;
 
+import ch.hearc.ig.guideresto.business.BasicEvaluation;
 import ch.hearc.ig.guideresto.business.City;
 import ch.hearc.ig.guideresto.business.Restaurant;
+import ch.hearc.ig.guideresto.business.RestaurantType;
 import ch.hearc.ig.guideresto.persistence.AbstractMapper;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
@@ -26,20 +28,9 @@ public class CityMapper extends AbstractMapper<City> {
      * @return l'objet City créé, ou null en cas d'erreur
      */
     @Override
-    public City create(City city) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.persist(city);
-                tx.commit();
-                return city;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return null;
-            }
-        }
+    public City create(City city, EntityManager em) {
+        em.persist(city);  // il devient "managed"
+        return city;       // retourne l'entité persistée
     }
 
     /**
@@ -48,20 +39,9 @@ public class CityMapper extends AbstractMapper<City> {
      * @return true si la mise à jour a réussi, false en cas d'erreur
      */
     @Override
-    public boolean update(City city) {
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                em.merge(city);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return false;
-            }
-        }
+    public boolean update(City city, EntityManager em) {
+        em.merge(city);  // merge l'entité avec l'EM courant
+        return true;
     }
 
     /**
@@ -70,9 +50,13 @@ public class CityMapper extends AbstractMapper<City> {
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean delete(City city) {
-        if (city == null || city.getId() == null) return false;
-        return deleteById(city.getId());
+    public boolean delete(City city, EntityManager em) {
+        // Récupérer l'entité gérée par l'EM
+        RestaurantType managed = em.find(RestaurantType.class, city.getId());
+        if (managed != null) {
+            em.remove(managed);
+        }
+        return true;
     }
 
     /**
@@ -81,27 +65,12 @@ public class CityMapper extends AbstractMapper<City> {
      * @return true si la suppression a réussi, false sinon
      */
     @Override
-    public boolean deleteById(Integer id) {
-        if (id == null) return false;
-
-        try (EntityManager em = getEntityManager()) {
-            EntityTransaction tx = em.getTransaction();
-            try {
-                tx.begin();
-                City entity = em.find(City.class, id);
-                if (entity == null) {
-                    tx.commit();
-                    return false;
-                }
-                em.remove(entity);
-                tx.commit();
-                return true;
-            } catch (Exception e) {
-                if (tx.isActive()) tx.rollback();
-
-                return false;
-            }
+    public boolean deleteById(Integer id, EntityManager em) {
+        City entity = em.find(City.class, id);
+        if (entity != null) {
+            em.remove(entity);
         }
+        return true;
     }
 
     /**
